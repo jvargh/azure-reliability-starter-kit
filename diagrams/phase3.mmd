@@ -1,0 +1,5 @@
+flowchart LR
+    U[Analyze usage + Advisor] --> P[Basic/Auxiliary table plans]
+    P --> T[Ingestion transforms drop noise]
+    T --> SR[Summary rules + retention/archive]
+    SR --> SAV[Lower spend, same signal]

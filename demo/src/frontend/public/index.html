@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Contoso Store - SLI/SLO Demo</title>
+  <style>
+    body { font-family: Segoe UI, system-ui, sans-serif; max-width: 640px; margin: 3rem auto; padding: 0 1rem; }
+    button { font-size: 1rem; padding: 0.6rem 1.2rem; margin-right: 0.5rem; cursor: pointer; }
+    pre { background: #f3f3f3; padding: 1rem; border-radius: 6px; min-height: 3rem; }
+    h1 { color: #0078d4; }
+  </style>
+</head>
+<body>
+  <h1>Contoso Store</h1>
+  <p>Mission-critical checkout journey for the Azure Monitor SLI/SLO demo.</p>
+  <button onclick="call('login')">Login</button>
+  <button onclick="call('checkout')">Checkout</button>
+  <pre id="out">Ready.</pre>
+  <script>
+    async function call(op) {
+      const out = document.getElementById('out');
+      out.textContent = op + '...';
+      try {
+        const r = await fetch('/api/' + op);
+        out.textContent = op + ' -> ' + r.status + '\n' + JSON.stringify(await r.json(), null, 2);
+      } catch (e) {
+        out.textContent = op + ' failed: ' + e;
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "14878348288643964707"
+    }
+  },
+  "parameters": {
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure region for the rule group."
+      }
+    },
+    "azureMonitorWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource ID of the Azure Monitor Workspace that stores the Prometheus metrics."
+      }
+    },
+    "namePrefix": {
+      "type": "string",
+      "defaultValue": "slidemo",
+      "metadata": {
+        "description": "Name prefix used by the demo (matches the main deployment)."
+      }
+    },
+    "interval": {
+      "type": "string",
+      "defaultValue": "PT1M",
+      "metadata": {
+        "description": "Evaluation interval for the recording rules."
+      }
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.AlertsManagement/prometheusRuleGroups",
+      "apiVersion": "2023-03-01",
+      "name": "[format('{0}-sli-recording-rules', parameters('namePrefix'))]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "description": "Recording rules that expose SLI-ready dimensions for the Checkout/Login demo.",
+        "scopes": [
+          "[parameters('azureMonitorWorkspaceId')]"
+        ],
+        "enabled": true,
+        "interval": "[parameters('interval')]",
+        "rules": [
+          {
+            "record": "sli:http_requests:rate5m",
+            "expression": "sum by (service, status_class) (rate(http_server_requests_total[5m]))"
+          },
+          {
+            "record": "sli:dependency_calls:rate5m",
+            "expression": "sum by (dependency, status) (rate(dependency_calls_total[5m]))"
+          },
+          {
+            "record": "sli:http_request_latency_p95:5m",
+            "expression": "histogram_quantile(0.95, sum by (service, le) (rate(http_server_request_duration_seconds_bucket[5m])))"
+          },
+          {
+            "record": "sli:http_request_latency_avg:5m",
+            "expression": "sum by (service) (rate(http_server_request_duration_seconds_sum[5m])) / sum by (service) (rate(http_server_request_duration_seconds_count[5m]))"
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": {
+    "ruleGroupId": {
+      "type": "string",
+      "value": "[resourceId('Microsoft.AlertsManagement/prometheusRuleGroups', format('{0}-sli-recording-rules', parameters('namePrefix')))]"
+    },
+    "ruleGroupName": {
+      "type": "string",
+      "value": "[format('{0}-sli-recording-rules', parameters('namePrefix'))]"
+    }
+  }
+}

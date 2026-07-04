@@ -1,0 +1,25 @@
+flowchart TD
+    APP[Applications<br/>OpenTelemetry + App Insights] --> AMW[(Azure Monitor Workspace<br/>Managed Prometheus)]
+    APP --> LAW[(Log Analytics<br/>logs + traces)]
+    AMW --> SG[Service Group<br/>app boundary]
+    SG --> SLI[SLIs + SLOs<br/>error budget + burn rate]
+    SLI -->|results stored in AMW| AMW
+    AMW -->|PromQL signal| HM[Health Models<br/>rollup health score]
+    LAW --> HM
+    SLI -->|burn alerts| AG[Action Groups]
+    HM -->|health-state alerts| AG
+    AMW -->|telemetry + alerts| OBS[Observability Agent<br/>investigate + correlate]
+    LAW --> OBS
+    OBS --> ISS[Azure Monitor Issues]
+    OBS -. autonomous .-> ISS
+    ISS -->|issue actions| AG
+    ISS --> SRE[SRE Agent<br/>incident automation + approved fixes]
+    SRE -->|remediate| APP
+    ISS --> GATE{Error budget<br/>healthy?}
+    GATE -->|yes| SHIP[Ship features]
+    GATE -->|no| FIX[Stabilize]
+    style SLI fill:#0b6,stroke:#063,color:#fff
+    style HM fill:#08c,stroke:#036,color:#fff
+    style OBS fill:#73c,stroke:#319,color:#fff
+    style SRE fill:#609,stroke:#306,color:#fff
+    style GATE fill:#444,stroke:#000,color:#fff

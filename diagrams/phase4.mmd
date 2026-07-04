@@ -1,0 +1,5 @@
+flowchart LR
+    BR[Budget + health + issues] --> RV[Weekly review]
+    RV --> G{Budget healthy?}
+    G -->|yes| SHIP[Ship]
+    G -->|no| ST[Stabilize]

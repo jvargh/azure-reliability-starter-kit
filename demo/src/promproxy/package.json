@@ -1,0 +1,13 @@
+{
+  "name": "sli-demo-promproxy",
+  "version": "1.0.0",
+  "description": "Auth proxy that injects a managed-identity Entra token and forwards Prometheus remote-write requests to an Azure Monitor Workspace. Replaces the IMDS-bound Microsoft sidecar so it can run on App Service / Container Apps.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@azure/identity": "^4.5.0",
+    "express": "^4.21.0"
+  }
+}

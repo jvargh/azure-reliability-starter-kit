@@ -1,0 +1,5 @@
+flowchart LR
+    M[Metrics in AMW] --> S[Author SLI<br/>availability + latency]
+    S --> B[Set baseline SLO 99.9%]
+    B --> EB[Error budget + burn rate]
+    EB --> AL[Fast/slow burn alerts]

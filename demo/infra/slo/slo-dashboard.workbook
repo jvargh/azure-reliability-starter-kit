@@ -1,0 +1,297 @@
+{
+  "version": "Notebook/1.0",
+  "items": [
+    {
+      "type": 1,
+      "content": {
+        "json": "## Checkout Service Group - SLO Dashboard\r\n\r\nSLI availability, latency and error-budget burn rate for the **Login + Checkout** workload, computed from the `sli:*` recording rules in the Azure Monitor Workspace. Targets: Checkout 99.9% | Login latency P95 <= 300 ms (99%) | Payment dependency 99.5%.",
+        "style": "info"
+      },
+      "name": "header"
+    },
+    {
+      "type": 9,
+      "content": {
+        "version": "KqlParameterItem/1.0",
+        "parameters": [
+          {
+            "id": "e5f3d1c8-f52d-4974-a3ad-752bd6f3c5ed",
+            "version": "KqlParameterItem/1.0",
+            "name": "timerange",
+            "label": "Time Range",
+            "type": 4,
+            "isRequired": true,
+            "value": {
+              "durationMs": 3600000
+            },
+            "typeSettings": {
+              "allowCustom": true,
+              "selectableValues": [
+                {
+                  "durationMs": 300000
+                },
+                {
+                  "durationMs": 1800000
+                },
+                {
+                  "durationMs": 3600000
+                },
+                {
+                  "durationMs": 14400000
+                },
+                {
+                  "durationMs": 43200000
+                },
+                {
+                  "durationMs": 86400000
+                },
+                {
+                  "durationMs": 604800000
+                },
+                {
+                  "durationMs": 2592000000
+                }
+              ]
+            }
+          }
+        ],
+        "style": "pills",
+        "queryType": 0,
+        "resourceType": "microsoft.monitor/accounts"
+      },
+      "name": "time-range"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "{\"type\":\"query\",\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"clamp_max(100 * sum(sli:http_requests:rate5m{service=\\\"checkout\\\",status_class=\\\"2xx\\\"}) / sum(sli:http_requests:rate5m{service=\\\"checkout\\\"}), 100)\"}",
+        "size": 4,
+        "aggregation": 3,
+        "showAnnotations": true,
+        "title": "Checkout Availability SLI % (target 99.9)",
+        "timeContextFromParameter": "timerange",
+        "queryType": 16,
+        "resourceType": "microsoft.monitor/accounts",
+        "crossComponentResources": [
+          "/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/rg-sli-demo/providers/Microsoft.Monitor/accounts/slidemo-amw-ioarvugvrpkmc"
+        ],
+        "visualization": "table"
+      },
+      "name": "checkoutavailabilityslitarget999"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "{\"type\":\"query\",\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"clamp_max(100 * sum(sli:http_requests:rate5m{service=\\\"login\\\",status_class=\\\"2xx\\\"}) / sum(sli:http_requests:rate5m{service=\\\"login\\\"}), 100)\"}",
+        "size": 4,
+        "aggregation": 3,
+        "showAnnotations": true,
+        "title": "Login Availability SLI % (target 99)",
+        "timeContextFromParameter": "timerange",
+        "queryType": 16,
+        "resourceType": "microsoft.monitor/accounts",
+        "crossComponentResources": [
+          "/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/rg-sli-demo/providers/Microsoft.Monitor/accounts/slidemo-amw-ioarvugvrpkmc"
+        ],
+        "visualization": "table"
+      },
+      "name": "loginavailabilityslitarget99"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "{\"type\":\"query\",\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"clamp_max(100 * sum(sli:dependency_calls:rate5m{dependency=\\\"payment\\\",status=\\\"ok\\\"}) / sum(sli:dependency_calls:rate5m{dependency=\\\"payment\\\"}), 100)\"}",
+        "size": 4,
+        "aggregation": 3,
+        "showAnnotations": true,
+        "title": "Payment Dependency SLI % (target 99.5)",
+        "timeContextFromParameter": "timerange",
+        "queryType": 16,
+        "resourceType": "microsoft.monitor/accounts",
+        "crossComponentResources": [
+          "/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/rg-sli-demo/providers/Microsoft.Monitor/accounts/slidemo-amw-ioarvugvrpkmc"
+        ],
+        "visualization": "table"
+      },
+      "name": "paymentdependencyslitarget995"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "{\"type\":\"query\",\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"(sum(sli:http_requests:rate5m{service=\\\"checkout\\\",status_class=\\\"5xx\\\"}) / sum(sli:http_requests:rate5m{service=\\\"checkout\\\"})) / 0.001\"}",
+        "size": 4,
+        "aggregation": 3,
+        "showAnnotations": true,
+        "title": "Checkout Error-Budget Burn Rate (x of 0.1%)",
+        "timeContextFromParameter": "timerange",
+        "queryType": 16,
+        "resourceType": "microsoft.monitor/accounts",
+        "crossComponentResources": [
+          "/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/rg-sli-demo/providers/Microsoft.Monitor/accounts/slidemo-amw-ioarvugvrpkmc"
+        ],
+        "visualization": "table"
+      },
+      "name": "checkouterrorbudgetburnratexof01"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "{\"type\":\"query\",\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"sli:http_request_latency_p95:5m{service=\\\"login\\\"}\"}",
+        "size": 4,
+        "aggregation": 3,
+        "showAnnotations": true,
+        "title": "Login P95 Latency seconds (threshold 0.3)",
+        "timeContextFromParameter": "timerange",
+        "queryType": 16,
+        "resourceType": "microsoft.monitor/accounts",
+        "crossComponentResources": [
+          "/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/rg-sli-demo/providers/Microsoft.Monitor/accounts/slidemo-amw-ioarvugvrpkmc"
+        ],
+        "visualization": "table"
+      },
+      "name": "loginp95latencysecondsthreshold03"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "{\"type\":\"query_range\",\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"label_replace(clamp_max(100 * sum(sli:http_requests:rate5m{service=\\\"checkout\\\",status_class=\\\"2xx\\\"}) / sum(sli:http_requests:rate5m{service=\\\"checkout\\\"}), 100), \\\"series\\\", \\\"checkout_availability\\\", \\\"\\\", \\\"\\\")\"}",
+        "size": 0,
+        "aggregation": 3,
+        "showAnnotations": true,
+        "title": "Checkout Availability SLI % - trend",
+        "timeContextFromParameter": "timerange",
+        "queryType": 16,
+        "resourceType": "microsoft.monitor/accounts",
+        "crossComponentResources": [
+          "/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/rg-sli-demo/providers/Microsoft.Monitor/accounts/slidemo-amw-ioarvugvrpkmc"
+        ],
+        "visualization": "timechart",
+        "chartSettings": {
+          "group": "*",
+          "createOtherGroup": 50,
+          "showLegend": true,
+          "ySettings": {
+            "numberFormatSettings": {
+              "options": {
+                "maximumFractionDigits": 2,
+                "useGrouping": true,
+                "style": "decimal"
+              },
+              "unit": 0
+            }
+          }
+        }
+      },
+      "name": "checkoutavailabilityslitrend"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "{\"type\":\"query_range\",\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"label_replace(clamp_max(100 * sum(sli:dependency_calls:rate5m{dependency=\\\"payment\\\",status=\\\"ok\\\"}) / sum(sli:dependency_calls:rate5m{dependency=\\\"payment\\\"}), 100), \\\"series\\\", \\\"payment_dependency\\\", \\\"\\\", \\\"\\\")\"}",
+        "size": 0,
+        "aggregation": 3,
+        "showAnnotations": true,
+        "title": "Payment Dependency SLI % - trend",
+        "timeContextFromParameter": "timerange",
+        "queryType": 16,
+        "resourceType": "microsoft.monitor/accounts",
+        "crossComponentResources": [
+          "/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/rg-sli-demo/providers/Microsoft.Monitor/accounts/slidemo-amw-ioarvugvrpkmc"
+        ],
+        "visualization": "timechart",
+        "chartSettings": {
+          "group": "*",
+          "createOtherGroup": 50,
+          "showLegend": true,
+          "ySettings": {
+            "numberFormatSettings": {
+              "options": {
+                "maximumFractionDigits": 2,
+                "useGrouping": true,
+                "style": "decimal"
+              },
+              "unit": 0
+            }
+          }
+        }
+      },
+      "name": "paymentdependencyslitrend"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "{\"type\":\"query_range\",\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"label_replace(sli:http_request_latency_p95:5m{service=\\\"login\\\"}, \\\"series\\\", \\\"login_p95\\\", \\\"\\\", \\\"\\\")\"}",
+        "size": 0,
+        "aggregation": 3,
+        "showAnnotations": true,
+        "title": "Login P95 Latency (s) - trend vs 0.3 threshold",
+        "timeContextFromParameter": "timerange",
+        "queryType": 16,
+        "resourceType": "microsoft.monitor/accounts",
+        "crossComponentResources": [
+          "/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/rg-sli-demo/providers/Microsoft.Monitor/accounts/slidemo-amw-ioarvugvrpkmc"
+        ],
+        "visualization": "timechart",
+        "chartSettings": {
+          "group": "*",
+          "createOtherGroup": 50,
+          "showLegend": true,
+          "ySettings": {
+            "numberFormatSettings": {
+              "options": {
+                "maximumFractionDigits": 2,
+                "useGrouping": true,
+                "style": "decimal"
+              },
+              "unit": 0
+            }
+          }
+        }
+      },
+      "name": "loginp95latencystrendvs03threshold"
+    },
+    {
+      "type": 3,
+      "content": {
+        "version": "KqlItem/1.0",
+        "query": "{\"type\":\"query_range\",\"version\":\"PrometheusQueryProvider/1.0\",\"queryText\":\"label_replace((sum(sli:http_requests:rate5m{service=\\\"checkout\\\",status_class=\\\"5xx\\\"}) / sum(sli:http_requests:rate5m{service=\\\"checkout\\\"})) / 0.001, \\\"series\\\", \\\"checkout_burn_rate\\\", \\\"\\\", \\\"\\\")\"}",
+        "size": 0,
+        "aggregation": 3,
+        "showAnnotations": true,
+        "title": "Checkout Error-Budget Burn Rate (x) - trend",
+        "timeContextFromParameter": "timerange",
+        "queryType": 16,
+        "resourceType": "microsoft.monitor/accounts",
+        "crossComponentResources": [
+          "/subscriptions/463a82d4-1896-4332-aeeb-618ee5a5aa93/resourceGroups/rg-sli-demo/providers/Microsoft.Monitor/accounts/slidemo-amw-ioarvugvrpkmc"
+        ],
+        "visualization": "timechart",
+        "chartSettings": {
+          "group": "*",
+          "createOtherGroup": 50,
+          "showLegend": true,
+          "ySettings": {
+            "numberFormatSettings": {
+              "options": {
+                "maximumFractionDigits": 2,
+                "useGrouping": true,
+                "style": "decimal"
+              },
+              "unit": 0
+            }
+          }
+        }
+      },
+      "name": "checkouterrorbudgetburnratextrend"
+    }
+  ],
+  "$schema": "https://github.com/Microsoft/Application-Insights-Workbooks/blob/master/schema/workbook.json"
+}

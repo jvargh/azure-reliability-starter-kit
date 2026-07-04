@@ -1,0 +1,42 @@
+# collector-config.yaml
+# The collector receives OTLP from the frontend/backend App Services and fans out:
+#   - traces/logs  -> Application Insights (azuremonitor exporter)
+#   - metrics      -> Azure Monitor Workspace via Prometheus remote write
+#                     (through the App Service auth proxy that signs requests with the
+#                      user-assigned managed identity, replacing the IMDS-bound sidecar)
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+      grpc:
+        endpoint: 0.0.0.0:4317
+
+processors:
+  batch: {}
+  resourcedetection:
+    detectors: [env]
+
+exporters:
+  # Traces and logs to Application Insights.
+  azuremonitor:
+    connection_string: ${env:APPLICATIONINSIGHTS_CONNECTION_STRING}
+
+  # Metrics to the Azure Monitor Workspace, via the App Service auth proxy that attaches a
+  # managed-identity Entra token (the proxy runs on App Service where managed identity works,
+  # unlike the Microsoft remote-write sidecar which requires IMDS).
+  prometheusremotewrite:
+    endpoint: ${env:AMW_PROXY_WRITE_URL}
+    resource_to_telemetry_conversion:
+      enabled: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [resourcedetection, batch]
+      exporters: [azuremonitor]
+    metrics:
+      receivers: [otlp]
+      processors: [resourcedetection, batch]
+      exporters: [prometheusremotewrite]

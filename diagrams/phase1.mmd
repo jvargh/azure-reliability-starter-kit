@@ -1,0 +1,5 @@
+flowchart LR
+    C[Create health model] --> D[Discover entities<br/>Service Group / Resource Graph]
+    D --> SIG[Add signals<br/>metric + KQL + PromQL]
+    SIG --> TH[Set degraded/unhealthy thresholds]
+    TH --> R[Rollup health + state alerts]

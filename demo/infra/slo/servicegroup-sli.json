@@ -1,0 +1,287 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-08-01/tenantDeploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "5264163202849751381"
+    }
+  },
+  "functions": [
+    {
+      "namespace": "__bicep",
+      "members": {
+        "requestSource": {
+          "parameters": [
+            {
+              "type": "string",
+              "name": "metric"
+            },
+            {
+              "type": "array",
+              "name": "filters"
+            },
+            {
+              "type": "string",
+              "name": "dimension"
+            },
+            {
+              "type": "string",
+              "name": "amwId"
+            },
+            {
+              "type": "string",
+              "name": "uamiId"
+            }
+          ],
+          "output": {
+            "type": "object",
+            "value": {
+              "signalSourceId": "A",
+              "metricNamespace": "prometheus",
+              "metricName": "[parameters('metric')]",
+              "sourceAmwAccountManagedIdentity": "[parameters('uamiId')]",
+              "sourceAmwAccountResourceId": "[parameters('amwId')]",
+              "filters": "[parameters('filters')]",
+              "spatialAggregation": {
+                "type": "Sum",
+                "dimensions": [
+                  "[parameters('dimension')]"
+                ]
+              },
+              "temporalAggregation": {
+                "type": "Average",
+                "windowSizeMinutes": 5
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "parameters": {
+    "serviceGroupName": {
+      "type": "string",
+      "metadata": {
+        "description": "Service Group name (must be unique in the tenant)."
+      }
+    },
+    "serviceGroupDisplayName": {
+      "type": "string",
+      "defaultValue": "Checkout Service Group (SLI demo)",
+      "metadata": {
+        "description": "Service Group display name."
+      }
+    },
+    "tenantId": {
+      "type": "string",
+      "defaultValue": "[tenant().tenantId]",
+      "metadata": {
+        "description": "Tenant ID (parent root service group name)."
+      }
+    },
+    "azureMonitorWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource ID of the Azure Monitor Workspace holding the recording-rule metrics."
+      }
+    },
+    "sliManagedIdentityId": {
+      "type": "string",
+      "metadata": {
+        "description": "Resource ID of the user-assigned managed identity with Monitoring access to the workspace."
+      }
+    }
+  },
+  "variables": {
+    "amwIdentity": {
+      "resourceId": "[parameters('azureMonitorWorkspaceId')]",
+      "identity": "[parameters('sliManagedIdentityId')]"
+    }
+  },
+  "resources": {
+    "serviceGroup": {
+      "type": "Microsoft.Management/serviceGroups",
+      "apiVersion": "2024-02-01-preview",
+      "name": "[parameters('serviceGroupName')]",
+      "properties": {
+        "displayName": "[parameters('serviceGroupDisplayName')]",
+        "parent": {
+          "resourceId": "[format('/providers/Microsoft.Management/serviceGroups/{0}', parameters('tenantId'))]"
+        }
+      }
+    },
+    "checkoutAvailability": {
+      "type": "Microsoft.Monitor/slis",
+      "apiVersion": "2025-03-01-preview",
+      "scope": "[format('Microsoft.Management/serviceGroups/{0}', parameters('serviceGroupName'))]",
+      "name": "CheckoutAvailabilitySLI",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', parameters('sliManagedIdentityId'))]": {}
+        }
+      },
+      "properties": {
+        "description": "Checkout request success rate: HTTP 2xx responses divided by all checkout requests. Target 99.9%.",
+        "category": "Availability",
+        "evaluationType": "RequestBased",
+        "enableAlert": true,
+        "destinationAmwAccounts": [
+          "[variables('amwIdentity')]"
+        ],
+        "baselineProperties": {
+          "baseline": {
+            "value": "[json('99.9')]",
+            "evaluationPeriodDays": 7,
+            "evaluationCalculationType": "RollingDays"
+          }
+        },
+        "sliProperties": {
+          "goodSignals": {
+            "signalSources": [
+              "[__bicep.requestSource('sli:http_requests:rate5m', createArray(createObject('dimensionName', 'service', 'operator', 'eq', 'value', 'checkout'), createObject('dimensionName', 'status_class', 'operator', 'eq', 'value', '2xx')), 'service', parameters('azureMonitorWorkspaceId'), parameters('sliManagedIdentityId'))]"
+            ],
+            "signalFormula": "A"
+          },
+          "totalSignals": {
+            "signalSources": [
+              "[__bicep.requestSource('sli:http_requests:rate5m', createArray(createObject('dimensionName', 'service', 'operator', 'eq', 'value', 'checkout')), 'service', parameters('azureMonitorWorkspaceId'), parameters('sliManagedIdentityId'))]"
+            ],
+            "signalFormula": "A"
+          }
+        }
+      },
+      "dependsOn": [
+        "serviceGroup"
+      ]
+    },
+    "loginLatency": {
+      "type": "Microsoft.Monitor/slis",
+      "apiVersion": "2025-03-01-preview",
+      "scope": "[format('Microsoft.Management/serviceGroups/{0}', parameters('serviceGroupName'))]",
+      "name": "LoginLatencySLI",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', parameters('sliManagedIdentityId'))]": {}
+        }
+      },
+      "properties": {
+        "description": "Login P95 latency under 300 ms. A window is good when P95 latency is at or below 0.3 seconds. Target 99% of windows.",
+        "category": "Latency",
+        "evaluationType": "WindowBased",
+        "enableAlert": true,
+        "destinationAmwAccounts": [
+          "[variables('amwIdentity')]"
+        ],
+        "baselineProperties": {
+          "baseline": {
+            "value": 99,
+            "evaluationPeriodDays": 7,
+            "evaluationCalculationType": "RollingDays"
+          }
+        },
+        "sliProperties": {
+          "windowUptimeCriteria": {
+            "target": "[json('0.3')]",
+            "comparator": "lte"
+          },
+          "signals": {
+            "signalSources": [
+              {
+                "signalSourceId": "A",
+                "metricNamespace": "prometheus",
+                "metricName": "sli:http_request_latency_p95:5m",
+                "sourceAmwAccountManagedIdentity": "[parameters('sliManagedIdentityId')]",
+                "sourceAmwAccountResourceId": "[parameters('azureMonitorWorkspaceId')]",
+                "filters": [
+                  {
+                    "dimensionName": "service",
+                    "operator": "eq",
+                    "value": "login"
+                  }
+                ],
+                "spatialAggregation": {
+                  "type": "Average",
+                  "dimensions": [
+                    "service"
+                  ]
+                },
+                "temporalAggregation": {
+                  "type": "Average",
+                  "windowSizeMinutes": 5
+                }
+              }
+            ],
+            "signalFormula": "A"
+          }
+        }
+      },
+      "dependsOn": [
+        "serviceGroup"
+      ]
+    },
+    "paymentDependency": {
+      "type": "Microsoft.Monitor/slis",
+      "apiVersion": "2025-03-01-preview",
+      "scope": "[format('Microsoft.Management/serviceGroups/{0}', parameters('serviceGroupName'))]",
+      "name": "PaymentDependencySLI",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', parameters('sliManagedIdentityId'))]": {}
+        }
+      },
+      "properties": {
+        "description": "Payment dependency success rate: successful payment calls divided by all payment calls. Target 99.5%.",
+        "category": "Availability",
+        "evaluationType": "RequestBased",
+        "enableAlert": true,
+        "destinationAmwAccounts": [
+          "[variables('amwIdentity')]"
+        ],
+        "baselineProperties": {
+          "baseline": {
+            "value": "[json('99.5')]",
+            "evaluationPeriodDays": 7,
+            "evaluationCalculationType": "RollingDays"
+          }
+        },
+        "sliProperties": {
+          "goodSignals": {
+            "signalSources": [
+              "[__bicep.requestSource('sli:dependency_calls:rate5m', createArray(createObject('dimensionName', 'dependency', 'operator', 'eq', 'value', 'payment'), createObject('dimensionName', 'status', 'operator', 'eq', 'value', 'ok')), 'dependency', parameters('azureMonitorWorkspaceId'), parameters('sliManagedIdentityId'))]"
+            ],
+            "signalFormula": "A"
+          },
+          "totalSignals": {
+            "signalSources": [
+              "[__bicep.requestSource('sli:dependency_calls:rate5m', createArray(createObject('dimensionName', 'dependency', 'operator', 'eq', 'value', 'payment')), 'dependency', parameters('azureMonitorWorkspaceId'), parameters('sliManagedIdentityId'))]"
+            ],
+            "signalFormula": "A"
+          }
+        }
+      },
+      "dependsOn": [
+        "serviceGroup"
+      ]
+    }
+  },
+  "outputs": {
+    "serviceGroupId": {
+      "type": "string",
+      "value": "[tenantResourceId('Microsoft.Management/serviceGroups', parameters('serviceGroupName'))]"
+    },
+    "sliIds": {
+      "type": "array",
+      "value": [
+        "[extensionResourceId(tenantResourceId('Microsoft.Management/serviceGroups', parameters('serviceGroupName')), 'Microsoft.Monitor/slis', 'CheckoutAvailabilitySLI')]",
+        "[extensionResourceId(tenantResourceId('Microsoft.Management/serviceGroups', parameters('serviceGroupName')), 'Microsoft.Monitor/slis', 'LoginLatencySLI')]",
+        "[extensionResourceId(tenantResourceId('Microsoft.Management/serviceGroups', parameters('serviceGroupName')), 'Microsoft.Monitor/slis', 'PaymentDependencySLI')]"
+      ]
+    }
+  }
+}

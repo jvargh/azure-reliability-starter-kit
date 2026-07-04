@@ -1,0 +1,8 @@
+flowchart LR
+    AL[Alert fires] --> CH[Chat with data]
+    CH --> DI[Deep investigation<br/>correlate app/infra/platform]
+    DI --> IS[Save as issue]
+    IS --> AU[Autonomous: correlate alerts]
+    AU --> IS
+    IS --> SRE[SRE Agent: automate response]
+    SRE --> FIX[Approved fix / remediation]

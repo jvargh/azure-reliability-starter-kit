@@ -1,0 +1,3 @@
+"Journey","Routes","Requests7d","PctTraffic","Instrumented"
+"checkout","/checkout","683672","65.3%","Y"
+"login","/login","363482","34.7%","Y"
