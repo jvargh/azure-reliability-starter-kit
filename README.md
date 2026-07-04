@@ -6,7 +6,7 @@ A customer-facing plan for building reliability on Azure, starting from the SLI/
 
 **In one line:** Measure reliability the way customers feel it (SLIs/SLOs), roll it into one health score (Health Models), let AI explain and fix incidents (Observability + SRE Agents), with error budgets deciding ship vs. stabilize.
 
-> Related material in this repo: the SLI/SLO theory and authoring process live in [design/SLO-SLI-Design-Guide.md](design/SLO-SLI-Design-Guide.md) and the executable [design/SLO-SLI-Design-Lab.md](design/SLO-SLI-Design-Lab.md); the working demo (apps, infra, load) is under [demo/](demo/).
+> Related material in this repo: the SLI/SLO theory and authoring process live in [sli-design/SLO-SLI-Design-Guide.md](sli-design/SLO-SLI-Design-Guide.md) and the executable [sli-design/SLO-SLI-Design-Lab.md](sli-design/SLO-SLI-Design-Lab.md); the working demo (apps, infra, load) is under [sli-demo/](sli-demo/).
 
 ---
 
@@ -67,10 +67,9 @@ Why this matters:
 1.  **Telemetry in.** Apps emit OpenTelemetry and App Insights data into an Azure Monitor Workspace (metrics) and Log Analytics (logs and traces).
 2.  **Score it.** SLIs and SLOs on a Service Group turn that telemetry into customer-experience reliability, with error budgets and burn rate.
 3.  **Roll it up.** Health Models read the SLI results (PromQL signal) plus resource signals into one top-down health score.
-4.  **Alert on what matters.** Burn-rate and health-state alerts fire through shared Action Groups, not raw metric noise.
-5.  **Understand fast.** The Observability Agent investigates, explains the root cause, and saves findings as Azure Monitor issues.
-6.  **Act.** The SRE Agent correlates with code and deployments and applies approved fixes back to the apps.
-7.  **Decide.** The error budget gates the call: ship features when healthy, stabilize when burning.
+4.  **Understand fast.** The Observability Agent ingests that telemetry and the burn-rate and health-state alerts directly, investigates, explains the root cause, and saves findings as Azure Monitor issues.
+5.  **Notify and act.** Each issue fans out to shared Action Groups (notification, not raw metric noise) and to the SRE Agent, which correlates with code and deployments and applies approved fixes back to the apps.
+6.  **Decide.** The error budget gates the call: ship features when healthy, stabilize when burning.
 
 ---
 

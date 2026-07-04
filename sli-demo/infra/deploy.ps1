@@ -20,8 +20,8 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$root = Split-Path -Parent $PSScriptRoot          # demo/
-$infra = $PSScriptRoot                            # demo/infra
+$root = Split-Path -Parent $PSScriptRoot          # sli-demo/
+$infra = $PSScriptRoot                            # sli-demo/infra
 $src = Join-Path $root 'src'
 
 function Publish-App($appName, $srcDir, [string[]]$include) {

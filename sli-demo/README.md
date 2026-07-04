@@ -75,7 +75,7 @@ These names and labels are what you select when authoring the SLI signals in the
 ## 3. What gets built
 
 ```
-demo/
+sli-demo/
   README.md                 <- this plan + runbook
   architecture.md           <- diagrams and signal design detail
   infra/
@@ -126,7 +126,7 @@ The Service Group is created **after** the resource group and its resources, bec
 The entire platform is App Service only (frontend, backend, the OpenTelemetry Collector as a container web app, and the managed-identity remote-write proxy). One script provisions all infrastructure with Bicep and pushes the app code:
 
 ```powershell
-cd demo/infra
+cd sli-demo/infra
 az login
 az account set --subscription "<SUBSCRIPTION_ID>"
 
@@ -157,7 +157,7 @@ Let traffic run 15-30 minutes so the metrics build history in the Azure Monitor 
 
 > **Automated path (recommended).** Everything in 5.2 and 5.3 (recording rules, Service
 > Group, membership, enabling monitoring, and the three SLIs) is automated by
-> [infra/slo/deploy-slo.ps1](infra/slo/deploy-slo.ps1). From `demo/infra/slo`, run:
+> [infra/slo/deploy-slo.ps1](infra/slo/deploy-slo.ps1). From `sli-demo/infra/slo`, run:
 >
 > ```powershell
 > ./deploy-slo.ps1

@@ -11,7 +11,7 @@ resource names and journeys. Throughout, the **Checkout demo** (a store with Log
 Payment dependency) is filled in as the worked example so you can see what a completed answer looks  
 like.
 
-How this fits with the other document in `design/`:
+How this fits with the other document in `sli-design/`:
 
 *   [SLO-SLI-Design-Guide.md](SLO-SLI-Design-Guide.md) is the theory-plus-process reference: it starts  
     from first principles (why SLIs exist, the layered mental model), states the design requirements,  
@@ -133,7 +133,7 @@ login = 4.702
 ```
 
 If this returns rows, your query path works. If it returns nothing, generate traffic first (see  
-`demo/load/generate-traffic-all.ps1`) so the metrics exist.
+`sli-demo/load/generate-traffic-all.ps1`) so the metrics exist.
 
 > **Validated mechanism.** The token + `POST /api/v1/query` flow above was run against a live Azure  
 > Monitor Workspace and returns a standard Prometheus envelope (`status=success`, `resultType=vector`).  
@@ -609,7 +609,7 @@ payment dependency continuous (1=yes, 0=gap): 1
 ```
 
 If any returns `0`, a 5-min bucket in the window was empty; add a steady traffic or heartbeat generator  
-so every evaluation window has samples (the demo uses `demo/load/generate-traffic-all.ps1`).
+so every evaluation window has samples (the demo uses `sli-demo/load/generate-traffic-all.ps1`).
 
 ### 3.4 Write the good / valid definition (the contract)
 
