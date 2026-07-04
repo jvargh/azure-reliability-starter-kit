@@ -73,9 +73,9 @@ The health model lives in its **own resource group** and references the SLI app 
 | Azure Monitor Workspace (from the SLI kit) | Stores the evaluated SLI results (`ns::.../m::<sli>:value`) that the signals read |
 | Action Group (optional) | Notification target for health-state alerts |
 
-> **Screenshot placeholder:** the health model **Graph view** with the `hm-checkout-demo` root, the discovery container, and the discovered `slidemo-be` / `slidemo-fe` App Service entities (Checkout and Login).
->
-> `![Health model graph view](media/health-model-graph-view.png)`
+![Health model Graph view: the hm-checkout-demo root rolls up through the Checkout/Login workload container to the discovered App Service entities (slidemo-be Checkout, slidemo-fe Login, OTel collector, remote-write proxy) and the App Service plan, all Healthy.](imgs/health-model-graph-view.png)
+
+*The health model Graph view: `hm-checkout-demo` (root) rolls up through the Checkout/Login workload container to the discovered App Service entities and the App Service plan, all Healthy.*
 
 ### 3.2 How the model taps the SLI foundation
 
@@ -324,7 +324,7 @@ Because the entity state already correlates its signals and children, one health
 
 > **Screenshot placeholder:** the entity's **Alerts** tab with Degraded (Sev2) and Unhealthy (Sev1) enabled.
 >
-> `![Entity alerts](media/health-model-alerts.png)`
+> `![Entity alerts](imgs/health-model-alerts.png)`
 
 **What success looks like**
 
