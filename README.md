@@ -6,7 +6,7 @@ A customer-facing plan for building reliability on Azure, starting from the SLI/
 
 **In one line:** Measure reliability the way customers feel it (SLIs/SLOs), roll it into one health score (Health Models), let AI explain and fix incidents (Observability + SRE Agents), with error budgets deciding ship vs. stabilize.
 
-> Related material in this repo: the SLI/SLO theory and authoring process live in [sli-design/SLO-SLI-Design-Guide.md](sli-design/SLO-SLI-Design-Guide.md) and the executable [sli-design/SLO-SLI-Design-Lab.md](sli-design/SLO-SLI-Design-Lab.md); the working demo (apps, infra, load) is under [sli-demo/](sli-demo/).
+> Related material in this repo: the SLI/SLO theory and authoring process live in [sli-demo/SLO-SLI-Design-Guide.md](sli-demo/SLO-SLI-Design-Guide.md) and the executable [sli-demo/SLO-SLI-Design-Lab.md](sli-demo/SLO-SLI-Design-Lab.md); the working demo (apps, infra, load) is under [sli-demo/](sli-demo/).
 
 ---
 
