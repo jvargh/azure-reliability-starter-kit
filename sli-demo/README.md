@@ -41,9 +41,10 @@ flowchart LR
     BE -->|payment call| PAY[(Payment dependency\nsimulated)]
 
     subgraph Telemetry
-      FE -. OTLP .-> COL[OpenTelemetry Collector\nAzure Container App]
+      FE -. OTLP .-> COL[OpenTelemetry Collector\nApp Service container]
       BE -. OTLP .-> COL
-      COL -->|prometheus remote write| AMW[(Azure Monitor Workspace\nSLI source + destination)]
+      COL -->|prometheus remote write| PROXY[Remote-write proxy\nApp Service, managed-identity auth]
+      PROXY -->|authenticated remote write| AMW[(Azure Monitor Workspace\nSLI source + destination)]
       FE -. App Insights SDK .-> AI[Application Insights]
       BE -. App Insights SDK .-> AI
       AI --> LAW[(Log Analytics Workspace)]
@@ -95,10 +96,12 @@ These names and labels are what you select when authoring the SLI signals in the
 sequenceDiagram
     participant App as Frontend/Backend
     participant Col as OTel Collector
+    participant Proxy as Remote-write proxy
     participant AMW as Azure Monitor Workspace
     participant SLI as SLI engine
     App->>Col: OTLP metrics (counters, histograms)
-    Col->>AMW: Prometheus remote write
+    Col->>Proxy: Prometheus remote write
+    Proxy->>AMW: authenticated remote write (managed-identity token)
     SLI->>AMW: read source metrics (managed identity)
     SLI->>AMW: write evaluated SLI results
     SLI->>SLI: compute error budget + burn rate

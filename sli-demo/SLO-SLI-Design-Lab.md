@@ -309,17 +309,18 @@ an SLO. SLOs are deliberately scarce: an SLO per endpoint produces noise no one 
 
 ### 2.1 Score each journey
 
-Rate every journey 1 (low) to 3 (high) on four axes, then sum:
+Rate every journey 1 (low) to 3 (high) on four axes, then sum. Because each axis contributes 1 to 3  
+and there are four of them, the total for a journey ranges from 4 (all low) to 12 (all high):
 
-| Axis | Question | 1 | 3 |
-| --- | --- | --- | --- |
-| Business impact | Does failure cost revenue or trust directly? | internal only | direct revenue |
-| Frequency | How often is it exercised? | rare | constant |
-| User visibility | Does the user immediately feel a failure? | background | foreground, blocking |
-| Blast radius | Does its failure break other journeys? | isolated | many depend on it |
+| Axis | What it measures | 1 | 2 | 3 |
+| --- | --- | --- | --- | --- |
+| Business impact | How directly failure hits revenue or customer trust | internal only | indirect revenue or trust | direct revenue |
+| Frequency | How often the journey is exercised | rare | intermittent | constant |
+| User visibility | How immediately a user notices the failure | background | degraded experience | foreground, blocking |
+| Blast radius | How many other journeys break when this one fails | isolated | some depend on it | many depend on it |
 
-Journeys scoring high (roughly 9+ of 12), plus any dependency a high-scoring journey cannot live  
-without, become SLO candidates.
+A high total (roughly 9 or more out of the maximum 12) marks a journey as an SLO candidate, as does  
+any dependency that a high-scoring journey cannot function without.
 
 ### 2.2 Criticality worksheet
 

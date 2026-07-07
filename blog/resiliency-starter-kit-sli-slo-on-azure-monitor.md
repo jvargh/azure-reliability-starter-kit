@@ -95,16 +95,18 @@ Everything runs on App Service, with an OpenTelemetry Collector as the metric br
 
 ### 3.2 Metric flow
 
-The apps speak OTLP. The Collector fans out: traces to Application Insights, metrics to the Azure Monitor Workspace via Prometheus remote write. The SLI engine reads those metrics back, computes the ratios, and publishes evaluated results into the same workspace.
+The apps speak OTLP. The Collector fans out: traces to Application Insights, metrics toward the Azure Monitor Workspace via Prometheus remote write. A managed-identity remote-write proxy sits in front of the workspace, attaching an Entra token so remote write works on App Service (which has no IMDS endpoint). The SLI engine reads those metrics back, computes the ratios, and publishes evaluated results into the same workspace.
 
 ```mermaid
 sequenceDiagram
     participant App as Frontend/Backend
     participant Col as OTel Collector
+    participant Proxy as Remote-write proxy
     participant AMW as Azure Monitor Workspace
     participant SLI as SLI engine
     App->>Col: OTLP metrics (counters, histograms)
-    Col->>AMW: Prometheus remote write
+    Col->>Proxy: Prometheus remote write
+    Proxy->>AMW: authenticated remote write (managed-identity token)
     SLI->>AMW: read source metrics (managed identity)
     SLI->>AMW: write evaluated SLI results
     SLI->>SLI: compute error budget + burn rate
