@@ -6,7 +6,9 @@ A customer-facing plan for building reliability on Azure, starting from the SLI/
 
 **In one line:** Measure reliability the way customers feel it (SLIs/SLOs), roll it into one health score (Health Models), let AI explain and fix incidents (Observability + SRE Agents), with error budgets deciding ship vs. stabilize.
 
-> Related material in this repo: the SLI/SLO theory and authoring process live in [sli-demo/SLO-SLI-Design-Guide.md](sli-demo/SLO-SLI-Design-Guide.md) and the executable [sli-demo/SLO-SLI-Design-Lab.md](sli-demo/SLO-SLI-Design-Lab.md); the working demo (apps, infra, load) is under [sli-demo/](sli-demo/).
+**Pattern:** Leverage the GA'd Azure Monitor SLI engine together with Health Models, the SRE Agent, and the Observability Agent to create one end-to-end observability workflow (measure, roll up, investigate, act).
+
+> Related material in this repo: the SLI/SLO theory and authoring process live in [01-sli-demo/SLI-Design-Guide.md](01-sli-demo/SLI-Design-Guide.md) and the executable [01-sli-demo/SLI-Lab-UserGuide.md](01-sli-demo/SLI-Lab-UserGuide.md); the working demo (apps, infra, load) is under [01-sli-demo/](01-sli-demo/).
 
 ---
 
@@ -57,7 +59,7 @@ The aim is two outcomes at once:
 *   **Reliability** measured the way customers feel it, with clear targets.
 *   **Faster resolution** when something breaks, through AI triage and action.
 
-The **error budget** is the connective tissue across both. It is the small amount of failure your SLO allows (at 99.9%, that is 0.1%). **Burn rate** is how fast you are spending it: 1x means you will use exactly the full budget by the end of the window, higher means you will exhaust it early. A burn-rate spike is the trigger that fires alerts, focuses the agents, and flips the release decision from ship to stabilize, so the same number drives both reliability and response.
+The **error budget** is the connective tissue across both. It is the small amount of failure your SLO allows (at 99.5%, that is 0.5%). **Burn rate** is how fast you are spending it: 1x means you will use exactly the full budget by the end of the window, higher means you will exhaust it early. A burn-rate spike is the trigger that fires alerts, focuses the agents, and flips the release decision from ship to stabilize, so the same number drives both reliability and response.
 
 Why this matters:
 
@@ -78,7 +80,7 @@ Why this matters:
 You have already done the hardest part: measuring reliability the way customers feel it.
 
 *   **SLIs and SLOs are generally available** in Azure Monitor and authored at the Service Group level, so reliability is scored per application, not per box.
-*   You have **availability and latency SLIs** with a **99.9% baseline**, **error budgets**, and **fast/slow burn-rate alerting**.
+*   You have **availability and latency SLIs** with a **99.5% baseline**, **error budgets**, and **fast/slow burn-rate alerting**.
 *   Telemetry flows through **OpenTelemetry to an Azure Monitor Workspace** (Managed Prometheus) plus **Application Insights** for traces and failures.
 
 This is the bedrock. Everything below builds on it without rework.
@@ -177,7 +179,7 @@ How SLIs feed the model: SLI results are written to a destination Azure Monitor 
 {__name__="ns::checkoutsg-ioarvugvrpkmc/m::checkoutavailabilitysli:value"}
 ```
 
-This returns the SLI percentage. Set the signal operator to "below" so lower is worse, for example Degraded `< 99.95` and Unhealthy `< 99.9`. Repeat per SLI (`loginlatencysli:value`, `paymentdependencysli:value`). The namespace is the service group name lowercased; the suffix (`ioarvugvrpkmc`) is your workspace instance and differs per tenant (confirm the exact name in metrics explorer on the destination workspace).
+This returns the SLI percentage. Set the signal operator to "below" so lower is worse, for example Degraded `< 99.9` and Unhealthy `< 99.5`. Repeat per SLI (`loginlatencysli:value`, `paymentdependencysli:value`). The namespace is the service group name lowercased; the suffix (`ioarvugvrpkmc`) is your workspace instance and differs per tenant (confirm the exact name in metrics explorer on the destination workspace).
 
 Docs: [Overview](https://learn.microsoft.com/azure/azure-monitor/health-models/overview) · [Create](https://learn.microsoft.com/azure/azure-monitor/health-models/create) · [Signals](https://learn.microsoft.com/azure/azure-monitor/health-models/signals) · [Signals tutorial](https://learn.microsoft.com/azure/azure-monitor/health-models/tutorial-signals)
 
@@ -202,6 +204,17 @@ SRE Agent:
 ### Phase 3: Operating model
 
 Burn-rate and health-state alerts gate releases; SRE Agent does first triage; weekly reviews read budgets, health rollup, and incident analytics. No new tooling, just the practice on top of phases 0 to 2.
+
+---
+
+## 6a. Hands-on labs
+
+Two executable, command-by-command labs let you build phases 0 and 1 against the demo app (or your own, by substituting resource names). Both are reusable templates with the Checkout/Login demo filled in as the worked example.
+
+*   **SLI/SLO Design Lab** ([01-sli-demo/SLI-Lab-UserGuide.md](01-sli-demo/SLI-Lab-UserGuide.md)) — takes you from a running app to three authored SLIs. You enumerate every user journey, score them for criticality, collect the evidence for each SLI (source metric, current performance, signal continuity, good/valid definition), fill a design checklist, author each SLI in the portal field-by-field, and validate end to end with PromQL. Worked result: `CheckoutAvailabilitySLI` (availability), `LoginLatencySLI` (latency), `PaymentDependencySLI` (dependency). Pair it with [01-sli-demo/SLI-Design-Guide.md](01-sli-demo/SLI-Design-Guide.md) for the theory.
+*   **Health Model Lab** ([02-healthmodel-demo/Health-Model-Lab-UserGuide.md](02-healthmodel-demo/Health-Model-Lab-UserGuide.md)) — builds an Azure Monitor health model over the same app: create the model, discover the app as entities, add signals (including an **Azure Monitor workspace PromQL signal that consumes the SLI results** written by the SLI engine), set Degraded/Unhealthy thresholds, configure health-state alerts, and view the rollup. This is where SLIs feed the health score. Pair it with [02-healthmodel-demo/Health-Model-Design-Guide.md](02-healthmodel-demo/Health-Model-Design-Guide.md) for the theory.
+
+The labs connect: the Health Model Lab reads the very SLI result metrics (`ns::<servicegroup>/m::<sli>:value`) that the SLI/SLO lab produces, so run the SLI lab first.
 
 ---
 

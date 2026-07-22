@@ -1,0 +1,23 @@
+flowchart TB
+    subgraph sli[rg-sli-demo]
+      FE[Frontend / Login] -. App Insights SDK .-> AI[Application Insights]
+      BE[Backend / Checkout] -. App Insights SDK .-> AI
+      AI --> LAW[(Log Analytics Workspace<br/>App Insights telemetry store)]
+      AMW[(Azure Monitor Workspace<br/>SLI metrics)]
+    end
+    subgraph hm[rg-healthmodel-demo]
+      MI[System-assigned identity]
+      HM[Health model]
+      HM --> ARG[Node: Azure Resource Graph]
+      HM --> AIT[Node: App Insights topology]
+      ARG --> E1[slidemo-fe / slidemo-be<br/>App Service entities]
+      AIT --> E2[sli-demo-frontend / sli-demo-backend<br/>cloud-role components]
+      E1 --> AL{{Health-state alerts<br/>Degraded / Unhealthy}}
+      E2 --> AL
+    end
+    MI -->|Monitoring Reader + Data Reader| sli
+    ARG -.->|Resource Graph query: App Services + plan| sli
+    AIT -.->|reads App Insights topology| AI
+    E1 ==>|AMW PromQL SLI signal| AMW
+    E2 ==>|AMW PromQL SLI signal| AMW
+    E2 -.->|recommended Log Analytics signal<br/>failed requests| LAW

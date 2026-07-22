@@ -1,10 +1,10 @@
 # Resiliency Starter Kit: Design and Ship SLIs and SLOs on Azure Monitor
 
-A hands-on starter kit for teams that want to stop guessing whether a service is healthy and start measuring reliability the way customers actually feel it. It moves from a real operational pain point, through a working architecture, into standing up the platform, deciding what to measure, authoring the measurements, validating them, and operating on them day to day. Everything is grounded in a runnable e-commerce demo and two companion documents in this repo: the [SLO/SLI Design Guide](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/sli-demo/SLO-SLI-Design-Guide.md) (theory and process) and the [SLO/SLI Design Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/sli-demo/SLO-SLI-Design-Lab.md) (the executable, command-by-command version).
+A hands-on starter kit for teams that want to stop guessing whether a service is healthy and start measuring reliability the way customers actually feel it. It moves from a real operational pain point, through a working architecture, into standing up the platform, deciding what to measure, authoring the measurements, validating them, and operating on them day to day. Everything is grounded in a runnable e-commerce demo and two companion documents in this repo: the [SLO/SLI Design Guide](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/01-sli-demo/SLI-Design-Guide.md) (theory and process) and the [SLO/SLI Design Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/01-sli-demo/SLI-Lab-UserGuide.md) (the executable, command-by-command version).
 
 The through-line is simple: an app emits metrics, those metrics become SLIs on a Service Group, SLIs produce error budgets, and burn-rate alerts on those budgets tell you when to ship and when to stabilize.
 
-This blog is the high-level pass; the [Design Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/sli-demo/SLO-SLI-Design-Lab.md) is the command-by-command version. Every Lab step maps to a section here, so you can drop into the Lab for the exact queries at any point:
+This blog is the high-level pass; the [Design Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/01-sli-demo/SLI-Lab-UserGuide.md) is the command-by-command version. Every Lab step maps to a section here, so you can drop into the Lab for the exact queries at any point:
 
 | Lab part / step | Covered in this blog |
 | --- | --- |
@@ -164,7 +164,7 @@ cd demo/infra
 az login
 az account set --subscription "<SUBSCRIPTION_ID>"
 
-./deploy.ps1 -ResourceGroup rg-sli-demo -Location eastus2
+./infra-deploy.ps1 -ResourceGroup rg-sli-demo -Location eastus2
 ```
 
 Then start steady traffic so the SLI source metrics never go quiet:
@@ -178,7 +178,7 @@ pwsh -File generate-traffic-all.ps1 -Rps 30
 
 **What success looks like**
 
-*   `deploy.ps1` prints the app URLs and a suggested Service Group name.
+*   `infra-deploy.ps1` prints the app URLs and a suggested Service Group name.
 *   `generate-traffic-all.ps1` shows a steady per-path counter.
 *   A PromQL query for `http_server_requests_total` returns data in the Azure Monitor Workspace.
 
@@ -186,7 +186,7 @@ pwsh -File generate-traffic-all.ps1 -Rps 30
 
 ## 5\. Decide what to measure
 
-You cannot author a useful SLI until you know which customer journey it protects and what "good" means for that journey. This is the step most implementations skip, and it is why their SLIs end up meaningless. With metrics now flowing, you can build the design from real data. The [Design Guide](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/sli-demo/SLO-SLI-Design-Guide.md) explains the reasoning; the [Design Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/sli-demo/SLO-SLI-Design-Lab.md) turns it into commands. The idea is a simple chain, where each link is forced by the one before it:
+You cannot author a useful SLI until you know which customer journey it protects and what "good" means for that journey. This is the step most implementations skip, and it is why their SLIs end up meaningless. With metrics now flowing, you can build the design from real data. The [Design Guide](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/01-sli-demo/SLI-Design-Guide.md) explains the reasoning; the [Design Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/01-sli-demo/SLI-Lab-UserGuide.md) turns it into commands. The idea is a simple chain, where each link is forced by the one before it:
 
 ```
 User experience -> Event -> Good vs valid -> SLI -> SLO -> Error budget -> Burn rate -> Alerting
@@ -293,10 +293,10 @@ The rules re-emit each metric with explicit `by (...)` grouping, registering the
 
 ### 6.2 Create the Service Group and the three SLIs
 
-SLIs are authored on a **Service Group**, the logical boundary of the application. From `demo/infra/slo`, one idempotent script creates it and everything on it:
+SLIs are authored on a **Service Group**, the logical boundary of the application. From `demo/infra/sli`, one idempotent script creates it and everything on it:
 
 ```
-./deploy-slo.ps1
+./deploy-sli.ps1
 ```
 
 It reads the platform outputs, deploys the recording rules, creates the Service Group and adds `rg-sli-demo` as a member, waits for metric-dimension indexing, then creates the three SLIs and polls each until it provisions `Succeeded`.
@@ -313,7 +313,7 @@ Prefer the portal? The Create SLI wizard has four tabs (Basics, SLI, Baseline + 
 
 **What success looks like**
 
-*   `deploy-slo.ps1` reports all three SLIs provisioned `Succeeded`.
+*   `deploy-sli.ps1` reports all three SLIs provisioned `Succeeded`.
 *   Each SLI's good and total signals preview a ratio near 1.0 under healthy traffic.
 
 ---
@@ -387,7 +387,7 @@ az monitor action-group create `
 
 ### 8.2 See the SLIs move in real time
 
-With `generate-traffic-all.ps1` running, the SLIs compute continuously and you can watch the error budget hold steady under healthy traffic. To see a budget actually burn and an alert fire, degrade one service while the load keeps running. The backend exposes a control endpoint for exactly this; the commands are in [load/inject-degradation.md](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/sli-demo/load/inject-degradation.md).
+With `generate-traffic-all.ps1` running, the SLIs compute continuously and you can watch the error budget hold steady under healthy traffic. To see a budget actually burn and an alert fire, degrade one service while the load keeps running. The backend exposes a control endpoint for exactly this; the commands are in [load/inject-degradation.md](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/01-sli-demo/load/inject-degradation.md).
 
 | To see | Degrade | Expected result |
 | --- | --- | --- |
@@ -421,16 +421,16 @@ Everything you need is in this repo, organized by concern:
 
 ```
 design/
-  SLO-SLI-Design-Guide.md   theory and the 9-step process
-  SLO-SLI-Design-Lab.md     executable, command-by-command version
+  SLI-Design-Guide.md       theory and the 9-step process
+  SLI-Lab-UserGuide.md      executable, command-by-command version
 demo/
   architecture.md           diagrams and signal design detail
   README.md                 plan + step-by-step runbook
   infra/
-    deploy.ps1              platform: app + telemetry + workspace
+    infra-deploy.ps1        platform: app + telemetry + workspace
     main.bicep, modules/    Bicep for all resources
     slo/
-      deploy-slo.ps1        Service Group + recording rules + SLIs
+      deploy-sli.ps1        Service Group + recording rules + SLIs
       recording-rules.bicep dimension-exposing Prometheus rules
       servicegroup-sli.bicep declarative Service Group + 3 SLIs
   src/
@@ -439,9 +439,6 @@ demo/
   load/
     generate-traffic-all.ps1  steady load across all three SLI paths
     inject-degradation.md     commands to degrade a service on demand
-  sli/
-    01-sli-authoring-runbook.md  portal steps for the 3 SLIs
-    02-burn-rate-alerts.md       baseline + fast/slow burn config
 ```
 
 Start with the Design Guide to build intuition, run the Design Lab to collect evidence against your own app, then use `demo/infra` to stand up the reference implementation.
@@ -462,10 +459,10 @@ Health Models point a PromQL signal at the stored SLI result (`ns::<sg>/m::<sli>
 
 ### Call to action
 
-1.  Read the [SLO/SLI Design Guide](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/sli-demo/SLO-SLI-Design-Guide.md) to internalize the chain from user experience to alerting.
-2.  Stand up the demo with `demo/infra/deploy.ps1` and start `generate-traffic-all.ps1` so metrics flow.
-3.  Run the [SLO/SLI Design Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/sli-demo/SLO-SLI-Design-Lab.md) against the running app to list journeys and measure current performance.
-4.  Author the three SLIs with `deploy-slo.ps1`, then degrade one service, watch a budget burn, and make your next release decision with a number instead of a hunch.
+1.  Read the [SLO/SLI Design Guide](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/01-sli-demo/SLI-Design-Guide.md) to internalize the chain from user experience to alerting.
+2.  Stand up the demo with `demo/infra/infra-deploy.ps1` and start `generate-traffic-all.ps1` so metrics flow.
+3.  Run the [SLO/SLI Design Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/01-sli-demo/SLI-Lab-UserGuide.md) against the running app to list journeys and measure current performance.
+4.  Author the three SLIs with `deploy-sli.ps1`, then degrade one service, watch a budget burn, and make your next release decision with a number instead of a hunch.
 
 Pick your top three journeys, name an owner for each, and let the error budget decide. Reliability stops being an argument and becomes arithmetic.
 

@@ -2,11 +2,11 @@
 
 A hands-on follow-on to the [SLI/SLO starter kit](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/blog/resiliency-starter-kit-sli-slo-on-azure-monitor.md). That kit gave you customer-experience reliability as numbers: SLIs on a Service Group, error budgets, and burn-rate alerts. This kit answers the next question a team asks once it has many good signals: **"so is the workload healthy right now, as one state, and what is dragging it down?"**
 
-It moves from a real operational pain point, through a health-model architecture, into standing up the model, deciding what to represent, discovering the app, tapping the SLI metrics as signals, alerting on health state, and validating it end to end. Everything is grounded in the same runnable e-commerce demo and two companion documents in this repo: the [Health Model Design Guide](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/healthmodel-demo/Health-Model-Design-Guide.md) (theory and process) and the [Health Model Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/healthmodel-demo/Health-Model-Lab.md) (the executable, command-by-command version).
+It moves from a real operational pain point, through a health-model architecture, into standing up the model, deciding what to represent, discovering the app, tapping the SLI metrics as signals, alerting on health state, and validating it end to end. Everything is grounded in the same runnable e-commerce demo and two companion documents in this repo: the [Health Model Design Guide](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/02-healthmodel-demo/Health-Model-Design-Guide.md) (theory and process) and the [Health Model Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/02-healthmodel-demo/Health-Model-Lab.md) (the executable, command-by-command version).
 
 The through-line: an app already emits telemetry and SLIs, discovery turns that app into **entities**, **signals** score each entity, health **rolls up** across dependencies into one state, and **state-change alerts** replace per-metric noise.
 
-This blog is the high-level pass; the [Health Model Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/healthmodel-demo/Health-Model-Lab.md) is the command-by-command version. Every Lab part maps to a section here, so you can drop into the Lab for exact commands at any point:
+This blog is the high-level pass; the [Health Model Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/02-healthmodel-demo/Health-Model-Lab.md) is the command-by-command version. Every Lab part maps to a section here, so you can drop into the Lab for exact commands at any point:
 
 | Lab part | Covered in this blog |
 | --- | --- |
@@ -150,13 +150,13 @@ az resource list -g rg-sli-demo --resource-type 'Microsoft.Monitor/accounts' --q
 Keep the SLI traffic generator running so signals report values instead of `Unknown`:
 
 ```powershell
-pwsh -File ../sli-demo/load/generate-traffic-all.ps1 -Rps 30
+pwsh -File ../01-sli-demo/load/generate-traffic-all.ps1 -Rps 30
 ```
 
 Then create the health model, its identity, and read access to the app in one script:
 
 ```powershell
-cd healthmodel-demo
+cd 02-healthmodel-demo
 ./deploy.ps1        # -ResourceGroup rg-healthmodel-demo -Location centralus -SliResourceGroup rg-sli-demo
 ```
 
@@ -173,7 +173,7 @@ cd healthmodel-demo
 
 ## 5. Decide what to model
 
-You cannot build a useful health model by dumping every resource into it. Decide, in order, what entities matter, what signals prove each is healthy, how their states combine, and which state changes deserve an alert. The [Design Guide](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/healthmodel-demo/Health-Model-Design-Guide.md) explains the reasoning; the [Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/healthmodel-demo/Health-Model-Lab.md) turns it into commands. The chain, where each link is forced by the one before it:
+You cannot build a useful health model by dumping every resource into it. Decide, in order, what entities matter, what signals prove each is healthy, how their states combine, and which state changes deserve an alert. The [Design Guide](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/02-healthmodel-demo/Health-Model-Design-Guide.md) explains the reasoning; the [Lab](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/02-healthmodel-demo/Health-Model-Lab.md) turns it into commands. The chain, where each link is forced by the one before it:
 
 ```
 Entity -> Signal -> Health state -> Relationship -> Rollup -> Alert
@@ -284,7 +284,7 @@ It grants the identity **Monitoring Reader** on the Azure Monitor Workspace, dis
 
 Each query wraps the series in `last_over_time({__name__="..."}[1h])` so a brief idle gap between traffic and the next SLI evaluation does not error the signal. Because the series names contain `/` and `::`, they are queried with the `{__name__="..."}` form.
 
-Attaching a signal to a discovered entity is a preserve-and-PUT: the script keeps the entity's exact `azureResourceId` (a full replace that changes it is rejected for dynamic entities), disables the entity's unsupported Resource Health signal, drops the recommended resource metric, and PUTs the `azureMonitorWorkspace` signals plus alerts. See the [Lab, Part 3](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/healthmodel-demo/Health-Model-Lab.md) for the detail.
+Attaching a signal to a discovered entity is a preserve-and-PUT: the script keeps the entity's exact `azureResourceId` (a full replace that changes it is rejected for dynamic entities), disables the entity's unsupported Resource Health signal, drops the recommended resource metric, and PUTs the `azureMonitorWorkspace` signals plus alerts. See the [Lab, Part 3](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/02-healthmodel-demo/Health-Model-Lab.md) for the detail.
 
 > **Screenshot placeholder:** the Checkout entity's **Signals** tab showing the Checkout availability SLI and Payment dependency SLI (Azure Monitor workspace signals), both Healthy at ~99.9%.
 >
@@ -370,10 +370,10 @@ This is where the model earns its keep.
 **Light up the UI first.** With no traffic the SLI signals read `Unknown`. Start the SLI traffic generator so the SLI engine keeps publishing and the health model turns green:
 
 ```powershell
-pwsh -File ../sli-demo/load/generate-traffic-all.ps1 -Rps 30
+pwsh -File ../01-sli-demo/load/generate-traffic-all.ps1 -Rps 30
 ```
 
-Within a minute the **Graph view** shows the app App Services and the workload root green, and each entity's **Timeline** fills with a healthy band. Now reuse the SLI kit's degradation knob (the backend chaos endpoint, see [load/inject-degradation.md](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/sli-demo/load/inject-degradation.md)) while traffic runs, and watch the model react:
+Within a minute the **Graph view** shows the app App Services and the workload root green, and each entity's **Timeline** fills with a healthy band. Now reuse the SLI kit's degradation knob (the backend chaos endpoint, see [load/inject-degradation.md](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/01-sli-demo/load/inject-degradation.md)) while traffic runs, and watch the model react:
 
 | Degrade | Signal that moves | Entity state | Alert |
 | --- | --- | --- | --- |
@@ -392,23 +392,23 @@ The payoff: instead of three separate metric alerts, you see one entity turn red
 
 ## 11. Repository layout
 
-Everything for this kit is under `healthmodel-demo/`, next to the SLI demo it builds on:
+Everything for this kit is under `02-healthmodel-demo/`, next to the SLI demo it builds on:
 
 ```
-healthmodel-demo/
+02-healthmodel-demo/
   README.md                     overview + quick start
   Health-Model-Design-Guide.md  theory: entities, signals, rollup, discoveries, alerts
   Health-Model-Lab.md           executable, command-by-command lab
   deploy.ps1                    create model + identity + role + Resource Graph discovery
   configure-signals-alerts.ps1  AMW Monitoring Reader + SLI-result signals + alerts + suppress infra + root link
   teardown.ps1                  delete model + remove role assignments
-sli-demo/                       the SLI kit this builds on (app, infra, AMW, SLIs)
+01-sli-demo/                    the SLI kit this builds on (app, infra, AMW, SLIs)
 ```
 
 Cleanup when you are done (the SLI demo is never touched):
 
 ```powershell
-cd healthmodel-demo
+cd 02-healthmodel-demo
 ./teardown.ps1 -DeleteResourceGroup
 ```
 
@@ -431,9 +431,9 @@ The Observability Agent uses the health context to correlate alerts and run deep
 
 ### Call to action
 
-1.  Read the [Health Model Design Guide](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/healthmodel-demo/Health-Model-Design-Guide.md) to internalize the chain from entity to alert.
+1.  Read the [Health Model Design Guide](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/02-healthmodel-demo/Health-Model-Design-Guide.md) to internalize the chain from entity to alert.
 2.  Make sure the [SLI demo](https://github.com/jvargh/azure-reliability-starter-kit/blob/main/blog/resiliency-starter-kit-sli-slo-on-azure-monitor.md) is deployed with traffic flowing.
-3.  Run `healthmodel-demo/deploy.ps1` to create the model and discover the app's Azure resources, then `configure-signals-alerts.ps1` to tap the stored SLI results and turn on health-state alerts.
+3.  Run `02-healthmodel-demo/deploy.ps1` to create the model and discover the app's Azure resources, then `configure-signals-alerts.ps1` to tap the stored SLI results and turn on health-state alerts.
 4.  Degrade one service, watch a single entity turn Unhealthy and roll up to the workload, and let one state change (not ten metric alerts) tell you what to fix.
 
 Model the entities that matter, let signals score them, and let one health state drive triage. Reliability stops being a wall of alerts and becomes a single, explainable score.
