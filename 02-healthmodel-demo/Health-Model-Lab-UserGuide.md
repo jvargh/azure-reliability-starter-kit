@@ -1,9 +1,14 @@
 # Health Model Lab: User Guide
 
 A guided, end-to-end walkthrough of building an Azure Monitor **Health Model** (preview) on top of the  
-SLIs authored by the SLI/SLO demo, driven by [healthmodel-run-lab.ps1](healthmodel-run-lab.ps1). The  
-runner takes you from a deployed SLI demo to a working health model whose entity health is driven by the  
-exact SLI values the Service Group already publishes, all in one pass.
+SLIs authored by the SLI/SLO demo. It takes you from a deployed SLI demo to a working health model whose  
+entity health is driven by the exact SLI values the Service Group already publishes.
+
+There are two ways to run the 6-phase build (Phase 7 is a summary checklist), and both share the same  
+Phase 0 setup and the same traffic prerequisite:
+
+*   **Path A - Automated:** [healthmodel-run-lab.ps1](healthmodel-run-lab.ps1) drives Phases 1 to 6 in one pass, prompting only before the two write steps (create the model, configure signals).
+*   **Path B - Manual:** run the `az` / PromQL commands yourself, phase by phase, to understand each step and adapt the build to your own application.
 
 The health model is the **next phase after SLIs**. Where the SLI lab  
 ([../01-sli-demo/sli-run-lab.ps1](../01-sli-demo/sli-run-lab.ps1)) authors the Service Level Indicators, this lab turns  
@@ -12,14 +17,34 @@ from the `ns::<servicegroup>/m::<sli>:value` series in the Azure Monitor Workspa
 health and reliability agree on the same numbers.
 
 This guide reflects the current workflow, where **baseline traffic is a manual prerequisite** started in  
-its own terminal before the lab runs (it is not started or stopped by the script).
+its own terminal before the lab runs (neither path starts or stops traffic for you).
+
+## How this fits with the design guide
+
+[Health-Model-Design-Guide.md](Health-Model-Design-Guide.md) is the concepts reference (entities, signals,  
+relationships, roll-up). Read it first if the vocabulary is new. **This guide is the executable version:**  
+the actual commands and expected output.
+
+---
+
+## Table of contents
+
+*   [What the lab does](#what-the-lab-does)
+*   [How the SLI label drives the health model](#how-the-sli-label-drives-the-health-model)
+*   [Why traffic must be running first](#why-traffic-must-be-running-first)
+*   [Prerequisites](#prerequisites)
+*   [Phase 0: deploy the SLI demo and start traffic (both paths)](#phase-0-deploy-the-sli-demo-and-start-traffic-both-paths)
+*   [Path A: Run the automated build (healthmodel-run-lab.ps1)](#path-a-run-the-automated-build-healthmodel-run-labps1) - [Parameters](#parameters), [Examples](#examples), [New vs existing](#new-vs-existing-health-model), [Full run output](#full-run-output-all-phases-interactive-mode)
+*   [Path B: Run the build by hand (command-by-command)](#path-b-run-the-build-by-hand-command-by-command) - [Phase 1](#phase-1-environment-setup-and-access-checks), [2](#phase-2-create-the-health-model), [3](#phase-3-discover-the-app-as-entities), [4](#phase-4-map-the-slis-to-entities), [5](#phase-5-configure-signals-and-alerts), [6](#phase-6-validate-end-to-end)
+*   [Outputs](#outputs), [Example run output](#example-run-output), [Troubleshooting](#troubleshooting), [How this maps to the Azure docs](#how-this-maps-to-the-azure-docs), [Portal fallback](#portal-fallback-if-the-preview-cliapi-changes), [Related files](#related-files)
 
 ---
 
 ## What the lab does
 
-`healthmodel-run-lab.ps1` implements Phases 1 through 6 of the health model build. Each phase maps to a  
-step in the build (Phase 2 creates the model + discovery, Phase 5 configures signals):
+The build has 6 phases (Phase 7 is a summary checklist). The automated runner (`healthmodel-run-lab.ps1`,  
+Path A) maps one-to-one to the manual phases (Path B). Phase 2 creates the model + two discovery nodes,  
+Phase 5 configures the signals:
 
 | Phase | Title | Mode |
 | --- | --- | --- |
@@ -76,7 +101,7 @@ The runner script does not start or stop traffic for you. It only checks in Phas
 
 ---
 
-## Step-by-step
+## Phase 0: deploy the SLI demo and start traffic (both paths)
 
 ### Step 1: deploy the SLI demo and author the SLIs (SLI lab prerequisite)
 
@@ -111,6 +136,8 @@ pwsh -File load/generate-traffic-all.ps1 -ResourceGroup rg-sli-demo -Rps 30 -Dur
 
 Give it 1 to 2 minutes so the SLI engine publishes recent `:value` samples.
 
+## Path A: Run the automated build (healthmodel-run-lab.ps1)
+
 ### Step 3: run the lab
 
 ```
@@ -143,7 +170,7 @@ model) and the manual teardown command is printed instead, so unattended runs ne
 
 ---
 
-## Parameters
+### Parameters
 
 | Parameter | Default | Purpose |
 | --- | --- | --- |
@@ -165,7 +192,7 @@ model) and the manual teardown command is printed instead, so unattended runs ne
 
 ---
 
-## Examples
+### Examples
 
 All examples run from the `02-healthmodel-demo` folder.
 
@@ -236,7 +263,7 @@ $agId = az monitor action-group show -g rg-ops -n oncall-ag --query id -o tsv
 
 ---
 
-## New vs existing health model
+### New vs existing health model
 
 *   If the health model **does not exist**, Phase 2 creates it end-to-end via `src/healthmodel-deploy.ps1` (model +  
     system-assigned identity, Monitoring Reader on the SLI resource group, authentication setting, and the  
@@ -250,7 +277,7 @@ actually authored, regardless of naming.
 
 ---
 
-## Full run output (all phases, interactive mode)
+### Full run output (all phases, interactive mode)
 
 > Illustrative capture from an earlier **single-node** run: it shows only the Azure Resource Graph
 > discovery node, so its Phase 3/6 entity lists are shorter than a current run. The current build
@@ -490,6 +517,321 @@ resource group (Phase 2 self-heals this automatically when it detects the role i
 Signals evaluate every minute and read the SLI `:value` series. With no live traffic they report  
 "Unknown". Start the traffic generator (Step 2), give it a few minutes, and re-run Phase 6  
 (`-StartPhase 6 -EndPhase 6`).
+
+---
+
+## Path B: Run the build by hand (command-by-command)
+
+Path A automates everything below. Run these commands yourself to understand each step, or to adapt the
+build to your own app. Every command mirrors what the runner and the two `src/` scripts do
+([src/healthmodel-deploy.ps1](src/healthmodel-deploy.ps1), [src/configure-signals-alerts.ps1](src/configure-signals-alerts.ps1)).
+
+### Lab conventions
+
+| Placeholder | Demo value |
+| --- | --- |
+| `<sli-rg>` | `rg-sli-demo` (SLI app, App Insights, Azure Monitor Workspace) |
+| `<hm-rg>` / `<hm>` / `<region>` | `rg-healthmodel-demo` / `hm-checkout-demo` / `centralus` |
+| `<amw>` / `<ai>` | `slidemo-amw-ioarvugvrpkmc` / `slidemo-ai-ioarvugvrpkmc` |
+| `<sg>` / `<sg-lower>` | `CheckoutSG-ioarvugvrpkmc` / `checkoutsg-ioarvugvrpkmc` |
+| `<fe>` / `<be>` | `slidemo-fe-<suffix>` / `slidemo-be-<suffix>` |
+
+Fixed values: health-models API `2026-05-01-preview`; Service Group SLIs API `2025-03-01-preview`; auth
+setting `system-assigned`; two discovery-rule names `resource-graph` and `appinsights-topology`.
+`Microsoft.CloudHealth` is region-limited (keep `centralus`).
+
+### Phase 1: Environment setup and access checks
+
+**Goal:** confirm the SLI resources exist and their SLI `:value` series carry recent data.
+
+```
+az account set --subscription "<your-subscription-name-or-id>"
+az group exists -n rg-sli-demo                                   # must print: true
+
+# resources the health model reads
+az resource list -g rg-sli-demo --resource-type Microsoft.Insights/components --query "[].name" -o tsv   # <ai>
+az resource list -g rg-sli-demo --resource-type Microsoft.Monitor/accounts   --query "[].name" -o tsv   # <amw>
+
+# Service Group that owns the SLIs (tenant-scoped)
+$SG = az deployment group show -g rg-sli-demo -n main --query "properties.outputs.suggestedServiceGroupName.value" -o tsv
+
+# Prometheus endpoint + a reusable helper, then read the latest SLI values
+$amwId = az resource show -g rg-sli-demo -n slidemo-amw-ioarvugvrpkmc --resource-type Microsoft.Monitor/accounts --query id -o tsv
+$PROM  = az resource show --ids $amwId --query "properties.metrics.prometheusQueryEndpoint" -o tsv
+function Invoke-Prom($q){ $t=az account get-access-token --resource "https://prometheus.monitor.azure.com" --query accessToken -o tsv; (Invoke-RestMethod -Method Post -Uri "$PROM/api/v1/query" -Headers @{Authorization="Bearer $t"} -Body @{query=$q}).data.result }
+foreach ($s in 'checkoutavailabilitysli','loginlatencysli','paymentdependencysli') {
+  "$s = " + (Invoke-Prom "last_over_time({__name__=`"ns::checkoutsg-ioarvugvrpkmc/m::${s}:value`"}[1h])").value[1]
+}
+```
+
+Expected output (with traffic flowing):
+
+```
+group exists: true
+slidemo-ai-ioarvugvrpkmc
+slidemo-amw-ioarvugvrpkmc
+checkoutavailabilitysli = 99.82
+loginlatencysli = 100
+paymentdependencysli = 99.82
+```
+
+If no values return, author the SLIs and start traffic (Phase 0), wait a few minutes, and retry.
+
+### Phase 2: Create the health model
+
+**Goal:** create the model + system identity, grant it read access, and create **two** discovery nodes
+(Azure Resource Graph and Application Insights topology), each linked to the model root.
+
+```
+# 2.1 model + system-assigned identity
+$hm  = az monitor health-models create -g rg-healthmodel-demo -n hm-checkout-demo -l centralus --system-assigned -o json | ConvertFrom-Json
+$hmId = $hm.id; $pid = $hm.identity.principalId
+
+# 2.2 Monitoring Reader on the SLI RG (discovery reads resource metadata + App Insights)
+$sliRgId = az group show -n rg-sli-demo --query id -o tsv
+az role assignment create --assignee-object-id $pid --assignee-principal-type ServicePrincipal --role "Monitoring Reader" --scope $sliRgId
+
+# 2.3 authentication setting (system-assigned managed identity)
+az rest --method put --url "https://management.azure.com$hmId/authenticationsettings/system-assigned?api-version=2026-05-01-preview" `
+  --headers "Content-Type=application/json" `
+  --body '{ "properties": { "authenticationKind": "ManagedIdentity", "managedIdentityName": "SystemAssigned", "displayName": "System-assigned managed identity" } }'
+```
+
+Create the **two** discovery rules (each auto-creates a parent node named after the rule):
+
+```
+# 2.4a Azure Resource Graph node (App Services + plan; recommended signals OFF)
+#   PUT .../discoveryrules/resource-graph
+#   properties.specification.kind = ResourceGraphQuery
+#   resourceGraphQuery = "resources | where resourceGroup =~ 'rg-sli-demo' | where type in~ ('microsoft.web/sites','microsoft.web/serverfarms')"
+#   discoverRelationships = Enabled, addRecommendedSignals = Disabled, addResourceHealthSignal = Disabled
+
+# 2.4b Application Insights topology node (cloud-role components + dependencies; recommended signals ON)
+$aiId = az resource list -g rg-sli-demo --resource-type Microsoft.Insights/components --query "[0].id" -o tsv
+#   PUT .../discoveryrules/appinsights-topology
+#   properties.specification.kind = ApplicationInsightsTopology, applicationInsightsResourceId = $aiId
+#   discoverRelationships = Enabled, addRecommendedSignals = Enabled
+```
+
+The full ARM bodies are in [src/healthmodel-deploy.ps1](src/healthmodel-deploy.ps1). Then link the model
+root to each node so health rolls up:
+
+```
+az rest --method put --url "https://management.azure.com$hmId/relationships/root-to-resource-graph?api-version=2026-05-01-preview" `
+  --headers "Content-Type=application/json" --body '{ "properties": { "parentEntityName": "hm-checkout-demo", "childEntityName": "resource-graph" } }'
+az rest --method put --url "https://management.azure.com$hmId/relationships/root-to-appinsights-topology?api-version=2026-05-01-preview" `
+  --headers "Content-Type=application/json" --body '{ "properties": { "parentEntityName": "hm-checkout-demo", "childEntityName": "appinsights-topology" } }'
+```
+
+Or just run the script (interactive by default; add `-NonInteractive` to skip prompts):
+
+```
+./src/healthmodel-deploy.ps1
+```
+
+Expected output (the manual PUTs and the script produce the same result):
+
+```
+    Monitoring Reader assigned
+    authentication setting created
+    Resource Graph discovery rule created
+    App Insights topology discovery rule created
+    root -> Resource Graph node created
+    root -> App Insights node created
+
+==> Done. Health model deployed.
+Health model:     hm-checkout-demo (rg-healthmodel-demo / centralus)
+Discovers:        Two nodes in 'rg-sli-demo': Azure Resource Graph (App Services + plan) and Application Insights topology
+```
+
+### Phase 3: Discover the app as entities
+
+**Goal:** verify the App Services were imported under **both** nodes (discovery runs every 5 minutes).
+
+```
+az monitor health-models entity list -g rg-healthmodel-demo --health-model-name hm-checkout-demo --query "[].{name:name, display:properties.displayName}" -o table
+```
+
+Expected output (both nodes populated after ~5 minutes):
+
+```
+Name                                  Display
+------------------------------------  --------------------------------------------
+0becdb58-...                          slidemo-otelcolapp-ioarvugvrpkmc
+47c0f3dc-...                          slidemo-promproxy-ioarvugvrpkmc
+526a527a-...                          slidemo-be-ioarvugvrpkmc-plan
+7f3883ff-...                          sli-demo-backend
+ac0e57fe-...                          slidemo-be-ioarvugvrpkmc
+appinsights-topology                  Discovered via Application Insights topology
+b847a37f-...                          slidemo-promproxy-ioarvugvrpkmc
+ef3b2b3e-...                          slidemo-fe-ioarvugvrpkmc
+f7731932-...                          sli-demo-frontend
+hm-checkout-demo                      hm-checkout-demo
+resource-graph                        Discovered via Azure Resource Graph
+```
+
+The Resource Graph node names entities after the ARM resources (`slidemo-fe-*`, `slidemo-be-*`); the App
+Insights node names them after the cloud roles (`sli-demo-frontend`, `sli-demo-backend`). If only the two
+parent nodes and the model root appear, discovery has not cycled yet, or the identity is missing
+Monitoring Reader on `rg-sli-demo`. Wait 5 to 10 minutes and re-list.
+
+### Phase 4: Map the SLIs to entities
+
+**Goal:** for each SLI, read its service/dependency label, confirm its `:value` series, and map it to the
+App Service entity that serves it.
+
+```
+# 4.1 enumerate the SLIs authored on the Service Group (control plane)
+az rest --method get --url "https://management.azure.com/providers/Microsoft.Management/serviceGroups/CheckoutSG-ioarvugvrpkmc/providers/Microsoft.Monitor/slis?api-version=2025-03-01-preview" --query "value[].name" -o tsv
+
+# 4.2 read one SLI's good/total query for its service= / dependency= label
+az rest --method get --url "https://management.azure.com/providers/Microsoft.Management/serviceGroups/CheckoutSG-ioarvugvrpkmc/providers/Microsoft.Monitor/slis/CheckoutAvailabilitySLI?api-version=2025-03-01-preview"
+# CheckoutAvailabilitySLI -> service=checkout    -> backend (Checkout)
+# LoginLatencySLI         -> service=login       -> frontend (Login)
+# PaymentDependencySLI    -> dependency=payment  -> backend (Checkout depends on payment)
+
+# 4.3 resolve the frontend/backend entities across BOTH nodes (names differ per node)
+$ents = az monitor health-models entity list -g rg-healthmodel-demo --health-model-name hm-checkout-demo -o json | ConvertFrom-Json
+$fe = $ents | Where-Object { ($_.properties.displayName -like '*-fe-*' -or $_.properties.displayName -like '*frontend*') -and $_.properties.displayName -notlike '*-plan' }
+$be = $ents | Where-Object { ($_.properties.displayName -like '*-be-*' -or $_.properties.displayName -like '*backend*')  -and $_.properties.displayName -notlike '*-plan' }
+$fe.properties.displayName; $be.properties.displayName
+```
+
+Expected output:
+
+```
+# 4.1 authored SLIs
+CheckoutAvailabilitySLI
+LoginLatencySLI
+PaymentDependencySLI
+
+# 4.3 frontend then backend (each appears once per discovery node)
+slidemo-fe-ioarvugvrpkmc
+sli-demo-frontend
+sli-demo-backend
+slidemo-be-ioarvugvrpkmc
+```
+
+Mapping rule: services in the frontend list (`login`) map to the frontend App Service; every other
+service or dependency (`checkout`, `payment`) maps to the backend. The runner records the result to
+`healthmodel-entity-map.csv`.
+
+### Phase 5: Configure signals and alerts
+
+**Goal:** grant AMW data-plane read, attach one PromQL SLI signal per SLI to the app entities in **both**
+nodes, give the supporting resources an uptime signal, and roll up to the root.
+
+```
+$hmId  = az monitor health-models show -g rg-healthmodel-demo -n hm-checkout-demo --query id -o tsv
+$pid   = az monitor health-models show -g rg-healthmodel-demo -n hm-checkout-demo --query identity.principalId -o tsv
+$amwId = az resource list -g rg-sli-demo --resource-type Microsoft.Monitor/accounts --query "[0].id" -o tsv
+
+# 5.1 AMW query roles: Monitoring Data Reader (data plane, REQUIRED) + Monitoring Reader
+foreach ($r in 'Monitoring Data Reader','Monitoring Reader') {
+  az role assignment create --assignee-object-id $pid --assignee-principal-type ServicePrincipal --role $r --scope $amwId
+}
+```
+
+For each frontend/backend entity in **both** nodes, PUT an `azureMonitorWorkspace` signal group. Backend
+(Checkout) carries the Checkout availability + Payment dependency SLIs; frontend (Login) carries the Login
+latency SLI. Each signal is a `PrometheusMetricsQuery` reading
+`last_over_time({__name__="ns::<sg-lower>/m::<sli-lower>:value"}[1h])`, with thresholds Degraded `< 99` /
+Unhealthy `< 95` and Sev2/Sev1 alerts. App Service entities also get a tuned `Http5xx` signal (Degraded
+`> 30`, Unhealthy `> 150`) so normal 5xx noise stays green. Supporting resources get Resource Health
+(Basic+ plans) or a platform uptime signal (Free/Shared); resource types that support neither have their
+signals cleared. The full ARM bodies are in
+[src/configure-signals-alerts.ps1](src/configure-signals-alerts.ps1).
+
+> **Pin the Service Group.** One AMW can hold the same SLI names under several `ns::<sg>/...` namespaces
+> (from other tests). Pass `-ServiceGroup CheckoutSG-ioarvugvrpkmc` so the signals reference the right
+> namespace; otherwise a signal may bind a stale/empty series and read Unknown with "Result array is
+> empty".
+
+Then link the root to each discovery node (the deploy already did this; the configure script re-applies
+it). Or just run the script:
+
+```
+./src/configure-signals-alerts.ps1 -ServiceGroup CheckoutSG-ioarvugvrpkmc
+```
+
+Expected output (signals attached to the app entities in both nodes):
+
+```
+==> Ensuring AMW query roles (Monitoring Data Reader + Monitoring Reader) for the health model identity
+    Monitoring Data Reader assigned
+    Monitoring Reader assigned
+==> Discovering published SLI result series in the AMW
+    CheckoutAvailabilitySLI: found
+    LoginLatencySLI: found
+    PaymentDependencySLI: found
+==> Checkout (backend): sli-demo-backend = 'sli-demo-backend': Checkout availability SLI (AMW), Payment dependency SLI (AMW)
+==> Checkout (backend): slidemo-be-ioarvugvrpkmc = 'slidemo-be-ioarvugvrpkmc': Checkout availability SLI (AMW), Payment dependency SLI (AMW)
+==> Login (frontend): slidemo-fe-ioarvugvrpkmc = 'slidemo-fe-ioarvugvrpkmc': Login latency SLI (AMW)
+==> Login (frontend): sli-demo-frontend = 'sli-demo-frontend': Login latency SLI (AMW)
+==> App Service plan tier: Free (Resource Health supported: False)
+==> Uptime signal (Uptime (HTTP 2xx)) on 'slidemo-otelcolapp-ioarvugvrpkmc'
+==> Uptime signal (CPU % (App Service plan)) on 'slidemo-be-ioarvugvrpkmc-plan'
+==> Linking the model root to each discovery node so health rolls up
+    root -> appinsights-topology updated
+    root -> resource-graph updated
+
+==> Done. AMW signals and alerts configured.
+```
+
+### Phase 6: Validate end-to-end
+
+**Goal:** confirm each app entity carries its SLI signal(s) and reads a real value, and that the root
+rolls up **both** nodes.
+
+```
+# 6.1 entity health + attached SLI signals
+az monitor health-models entity list -g rg-healthmodel-demo --health-model-name hm-checkout-demo -o json |
+  ConvertFrom-Json | ForEach-Object {
+    [pscustomobject]@{ Entity=$_.properties.displayName; Health=$_.properties.healthState;
+      SliSignals=($_.properties.signalGroups.azureMonitorWorkspace.signals.displayName -join ', ') } } |
+  Format-Table -AutoSize
+
+# 6.2 confirm the stored :value series (should match the SLI portal values)
+foreach ($s in 'checkoutavailabilitysli','loginlatencysli','paymentdependencysli') {
+  "$s = " + (Invoke-Prom "last_over_time({__name__=`"ns::checkoutsg-ioarvugvrpkmc/m::${s}:value`"}[1h])").value[1]
+}
+
+# 6.3 confirm the root links to BOTH discovery nodes
+az rest --method get --url "https://management.azure.com$hmId/relationships?api-version=2026-05-01-preview" `
+  --query "value[?properties.parentEntityName=='hm-checkout-demo'].properties.childEntityName" -o tsv
+# expected: resource-graph  and  appinsights-topology
+```
+
+Expected output (all app entities Healthy with their SLI signals; root rolls up both nodes):
+
+```
+-- 6.1 entity health + attached SLI signals --
+Entity                                     Health  SliSignals
+------                                     ------  ----------
+slidemo-otelcolapp-ioarvugvrpkmc           Healthy
+slidemo-promproxy-ioarvugvrpkmc            Healthy
+slidemo-be-ioarvugvrpkmc-plan              Healthy
+sli-demo-backend                           Healthy Checkout availability SLI (AMW), Payment dependency SLI (AMW)
+slidemo-be-ioarvugvrpkmc                   Healthy Checkout availability SLI (AMW), Payment dependency SLI (AMW)
+Workload via Application Insights topology Healthy
+slidemo-fe-ioarvugvrpkmc                   Healthy Login latency SLI (AMW)
+sli-demo-frontend                          Healthy Login latency SLI (AMW)
+hm-checkout-demo                           Healthy
+Workload via Azure Resource Graph          Healthy
+
+-- 6.2 stored :value series --
+checkoutavailabilitysli = 99.82
+loginlatencysli = 100
+paymentdependencysli = 99.82
+
+-- 6.3 root links to both discovery nodes --
+appinsights-topology
+resource-graph
+```
+
+If a signal reads Unknown with "Signal error", see the two causes in
+[Troubleshooting](#troubleshooting): a missing Monitoring Data Reader role, or the wrong service-group
+namespace.
 
 ---
 

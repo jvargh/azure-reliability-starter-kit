@@ -141,6 +141,15 @@ The two discovery nodes describe the **same** workload but draw it differently, 
 
 Takeaway: use the **Resource Graph** node for ownership/inventory structure and the **App Insights topology** node for the observed call graph. Neither is wrong; they answer different questions, and seeing them side by side is the lesson.
 
+### Reading the graph: why the same app can be green under one node and red under the other
+
+The two nodes also differ in **which signals they carry**, and that is deliberate. The same App Service (for example `slidemo-fe`) is discovered as a separate entity under each node, so it can show a different health state in each place:
+
+- **Resource Graph node (recommended signals off):** its App Service entities carry only the signals this demo attaches by hand, the AMW PromQL SLI signal plus a **tuned `Http5xx`** (Degraded > 30, Unhealthy > 150). Discovery never overwrites them, so these entities stay green under normal demo noise.
+- **Application Insights topology node (recommended signals on):** discovery owns the App Service entities it nests under the cloud roles and periodically re-applies the **recommended starter signals**, including an `Http5xx` that trips **Unhealthy at the first 5xx (`> 0`)** and Resource Health. Those defaults are intentionally strict, so the few 5xx this demo emits flip that copy of the app to **Unhealthy (red)** even while the Resource Graph copy stays green.
+
+That divergence is the point, not a misconfiguration: **recommended signals get you monitoring in minutes but are deliberately conservative**, while tuning or replacing them (as the Resource Graph node does) gives a signal calibrated to your workload. Leave them on for instant, noisy coverage; turn them off and attach your own (SLI or tuned metric signals) for a graph that only goes red when it matters. A red App Service under the App Insights node is the expected, teaching-by-contrast result.
+
 ### Reading the graph: what the states show when traffic stops
 
 The comparison above uses a **healthy** model. The states change the moment the workload stops
