@@ -433,9 +433,14 @@ function Invoke-Phase3 {
   foreach ($j in $script:Inventory) {
     Write-Host ''
     Write-Host ("Journey: {0}  ({1}% of traffic, {2} requests)" -f $j.Journey, $j.PctTraffic, $j.Requests) -ForegroundColor White
-    $business = Read-IntInRange '  Business impact (1-3)' 2 1 3
-    $vis = Read-IntInRange '  User visibility (1-3)' 2 1 3
-    $blast = Read-IntInRange '  Blast radius   (1-3)' 2 1 3
+    $isCheckout = ($j.Journey -eq 'checkout')
+    $isLatencyJourney = ($LatencyJourneys -contains $j.Journey)
+    $businessDefault = if ($isCheckout) { 3 } else { 2 }
+    $visibilityDefault = if ($isCheckout -or $isLatencyJourney) { 3 } else { 2 }
+    $blastDefault = if ($isCheckout -or $isLatencyJourney) { 3 } else { 2 }
+    $business = Read-IntInRange '  Business impact (1-3)' $businessDefault 1 3
+    $vis = Read-IntInRange '  User visibility (1-3)' $visibilityDefault 1 3
+    $blast = Read-IntInRange '  Blast radius   (1-3)' $blastDefault 1 3
     $freq = Get-FreqScore $j.PctTraffic
     $rows += [pscustomobject]@{ Journey = $j.Journey; IsDependency = $false; Business = $business; Frequency = $freq; Visibility = $vis; BlastRadius = $blast }
   }
@@ -532,7 +537,7 @@ function Invoke-Phase4 {
         $mq = Expand-Query 'sum(increase(http_server_request_duration_seconds_bucket{service="%L%",le="0.3"}[%D%d])) / sum(increase(http_server_request_duration_seconds_count{service="%L%"}[%D%d]))' @{ L = $label; D = $LookbackDays }
         $good = 'sli:http_request_latency_good:rate5m{service="' + $label + '"}'
         $tot = 'sli:http_request_latency_total:rate5m{service="' + $label + '"}'
-        $contQ = Expand-Query 'sli:http_request_latency_total:rate5m{service="%L%"}' @{ L = $label }
+        $contQ = Expand-Query 'http_server_request_duration_seconds_count{service="%L%"}' @{ L = $label }
       }
       'Dependency' {
         $mq = Expand-Query 'sum(increase(dependency_calls_total{dependency="%L%",status="ok"}[%D%d])) / sum(increase(dependency_calls_total{dependency="%L%"}[%D%d]))' @{ L = $label; D = $LookbackDays }

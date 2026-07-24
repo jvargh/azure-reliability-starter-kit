@@ -67,16 +67,16 @@ flowchart TB
 
     subgraph DISCOVER[Discover and select]
       direction LR
-      P1[1. Check environment<br/>and telemetry] --> P2[2. Enumerate all<br/>user journeys]
-      P2 --> P3[3. Select the<br/>critical journeys]
-      P3 --> P4[4. Collect data for<br/>each critical journey]
+      P1[Phase 1: Check environment<br/>and telemetry] --> P2[Phase 2: Enumerate all<br/>user journeys]
+      P2 --> P3[Phase 3: Select the<br/>critical journeys]
+      P3 --> P4[Phase 4: Collect data for<br/>each critical journey]
     end
 
     subgraph DELIVER[Design, implement, and verify]
       direction LR
-      P5[5. Build the<br/>design checklist] --> P6[6. Author SLIs<br/>on the Service Group]
-      P6 --> P7[7. Validate published<br/>SLI results]
-      P7 --> P8[8. Confirm lab<br/>completion]
+      P5[Phase 5: Build the<br/>design checklist] --> P6[Phase 6: Author SLIs<br/>on the Service Group]
+      P6 --> P7[Phase 7: Validate published<br/>SLI results]
+      P7 --> P8[Phase 8: Confirm lab<br/>completion]
     end
 
     APP --> PATHS
@@ -1008,8 +1008,8 @@ An SLI can only filter on **labels that physically exist on the metric**. Prove 
 Invoke-Prom 'count by (service, status_class) (http_server_requests_total{service="checkout"})' |
   ForEach-Object { "{0} / {1}" -f $_.metric.service, $_.metric.status_class }
 
-# Login latency -> needs service on the request-based latency recording rules
-Invoke-Prom 'count by (service) (sli:http_request_latency_total:rate5m{service="login"})' |
+# Login latency -> needs service on the raw request-duration histogram
+Invoke-Prom 'count by (service) (http_server_request_duration_seconds_count{service="login"})' |
   ForEach-Object { $_.metric.service }
 
 # Payment dependency -> needs dependency + status on dependency_calls_total
@@ -1032,7 +1032,7 @@ payment / error
 payment / ok
 ```
 
-Each SLI's filter labels exist: checkout has `status_class` (`2xx` = good) split by `service`; the login latency rule carries `service`; and the payment dependency has `status` (`ok` = good) split by `dependency`.
+Each SLI's filter labels exist: checkout has `status_class` (`2xx` = good) split by `service`; the raw login latency histogram carries `service`; and the payment dependency has `status` (`ok` = good) split by `dependency`.
 
 Source metric behind each dimension:
 
@@ -1139,7 +1139,7 @@ An SLI over an empty window publishes nothing and the panel reads "No data". Ver
 # check the source metric behind each of the three SLIs
 $sources = [ordered]@{
   'checkout availability' = 'http_server_requests_total{service="checkout"}'
-  'login latency'         = 'sli:http_request_latency_total:rate5m{service="login"}'
+  'login latency'         = 'http_server_request_duration_seconds_count{service="login"}'
   'payment dependency'    = 'dependency_calls_total{dependency="payment"}'
 }
 foreach ($name in $sources.Keys) {
