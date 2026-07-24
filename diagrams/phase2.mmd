@@ -1,9 +1,7 @@
 flowchart LR
-    AL[Alert fires] --> CH[Chat with data]
-    CH --> DI[Deep investigation<br/>correlate app/infra/platform]
-    DI --> IS[Save as issue]
-    IS --> AU[Autonomous: correlate alerts]
-    AU --> IS
-    AL -->|incident source| SRE[SRE Agent: automate response]
-    IS -. correlate .-> SRE
-    SRE --> FIX[Approved fix / remediation]
+    SLI[SLIs/SLOs<br/>burn-rate alerts] --> AG[Action Group<br/>ag-sli-demo]
+    HM[Health Model<br/>Degraded/Unhealthy alerts] --> AG
+    AG --> SRE[SRE Agent<br/>Azure Monitor Alerts source]
+    SRE --> INV[Investigate: App Insights + Logs<br/>+ Activity Log + GitHub deploys]
+    INV --> REM[Propose / execute remediation<br/>runbooks - approval gate]
+    REM --> REC[SLI recovers to Healthy]

@@ -12,6 +12,24 @@ A customer-facing plan for building reliability on Azure, starting from the SLI/
 
 ---
 
+## Table of contents
+
+*   [Video walkthroughs](#video-walkthroughs)
+*   [1\. The story in one slide](#1-the-story-in-one-slide)
+*   [1a. Implementation logic flow (all services, high level)](#1a-implementation-logic-flow-all-services-high-level)
+*   [1b. Phase-by-phase flow](#1b-phase-by-phase-flow)
+*   [1c. How the flow works, step by step](#1c-how-the-flow-works-step-by-step)
+*   [2\. Where you are today (the foundation)](#2-where-you-are-today-the-foundation)
+*   [3\. The path forward (three moves)](#3-the-path-forward-three-moves)
+*   [4\. Phased roadmap](#4-phased-roadmap)
+*   [5\. At a glance: the four services](#5-at-a-glance-the-four-services)
+*   [6\. How each phase is done (validated against Azure docs)](#6-how-each-phase-is-done-validated-against-azure-docs)
+*   [6a. Hands-on labs](#6a-hands-on-labs)
+*   [7\. What we ask of the customer](#7-what-we-ask-of-the-customer)
+*   [8\. Measures of success](#8-measures-of-success)
+
+---
+
 ## Video walkthroughs
 
 Watch each phase end to end:
@@ -37,15 +55,15 @@ Each phase reuses the previous one. SLIs feed Health Models, and Health Models f
 
 ## 1a. Implementation logic flow (all services, high level)
 
-How the services connect end to end: telemetry flows in, SLIs and Health Models score it, the Observability Agent reasons over it, Azure Monitor Alerts feed the SRE Agent as its incident source, and error budgets govern release decisions.
+How the services connect end to end: telemetry flows in, SLIs and Health Models score it, Azure Monitor Alerts feed the SRE Agent as its incident source, and error budgets govern release decisions.
 
-![End-to-end implementation logic flow connecting telemetry, Service Group, SLIs, Health Models, Action Groups, Observability Agent, Issues, SRE Agent, and the error-budget gate](diagrams/logic-flow.png)
+![End-to-end implementation logic flow connecting telemetry, Service Group, SLIs, Health Models, Action Groups, SRE Agent, and the error-budget gate](diagrams/logic-flow.png)
 
 ---
 
 ## 1b. Phase-by-phase flow
 
-### Phase 0: SLIs and SLOs (done)
+### Phase 0: SLIs and SLOs
 
 ![Phase 0 flow: metrics in AMW, author SLI, set baseline SLO, error budget and burn rate, burn alerts](diagrams/phase0.png)
 
@@ -55,7 +73,7 @@ How the services connect end to end: telemetry flows in, SLIs and Health Models 
 
 ### Phase 2: Observability Agent + SRE Agent
 
-![Phase 2 flow: alert fires, chat with data, deep investigation, save as issue, autonomous correlation, SRE Agent automates response, approved fix](diagrams/phase2.png)
+![Phase 2 flow: SLI burn-rate and Health Model alerts to the ag-sli-demo action group, SRE Agent ingests via Azure Monitor Alerts, investigates App Insights, logs, Activity Log and GitHub deploys, proposes or executes remediation runbooks behind an approval gate, and the SLI recovers to Healthy](diagrams/phase2.png)
 
 ### Phase 3: Operating model
 
