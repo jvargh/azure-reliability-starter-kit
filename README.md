@@ -21,7 +21,7 @@ Watch each phase end to end:
 | 01 | Infra and SLI demo | [Watch](https://youtu.be/4IKhEFicIGc) |
 | 02 | Health modeling | [Watch](https://youtu.be/WuMS1eupwMM) |
 | 03 | SRE Agent | [Watch](https://youtu.be/kIDff6d3Ut8) |
-| 04 | End-to-end test | [Watch](https://youtu.be/dbdGPJhauIM) |
+| 04 | End-to-end test | [Watch](https://youtu.be/QGf62a_c590) |
 
 ---
 
