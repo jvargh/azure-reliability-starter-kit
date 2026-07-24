@@ -584,14 +584,14 @@ function Invoke-Phase6 {
   Write-Step '6.6 - Upload knowledge (app topology + all remediation runbooks)'
   Write-Info 'Uploads the topology/common-cause doc and every src/remediation-runbooks/*.ps1 (as indexed'
   Write-Info 'knowledge docs) so the agent knows the layout and mitigations up front, from scratch.'
-  $uploadKnowledge = Join-Path $PSScriptRoot 'upload-knowledge.ps1'
+  $uploadKnowledge = Join-Path $PSScriptRoot 'src/upload-knowledge.ps1'
   $knowledgeDir = Join-Path $PSScriptRoot 'knowledge'
   if ((Test-Path $uploadKnowledge) -and (Test-Path $knowledgeDir)) {
     $sub = az account show --query id -o tsv
     try { & $uploadKnowledge -Subscription $sub -ResourceGroup $ResourceGroup -AgentName $AgentName -KnowledgeDir $knowledgeDir }
     catch { Write-Warn "Knowledge upload skipped: $($_.Exception.Message)" }
   }
-  else { Write-Warn 'upload-knowledge.ps1 or knowledge/ folder not found; skipping knowledge upload.' }
+  else { Write-Warn 'src/upload-knowledge.ps1 or knowledge/ folder not found; skipping knowledge upload.' }
 
   if (-not $anyAlerts) { Write-Warn 'No metric alert rules yet. Drive the SRE Agent with ./sli-alert-scenario.ps1 (creates the sli-fast-alerts trigger + injects a fault).' }
 

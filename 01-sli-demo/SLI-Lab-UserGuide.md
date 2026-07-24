@@ -19,6 +19,7 @@ This lab is a **reusable template**: run it against your own application by subs
 
 ## Table of contents
 
+*   [Process overview: one method, two execution paths](#process-overview-one-method-two-execution-paths)
 *   [What the lab does](#what-the-lab-does)
 *   [Prerequisites](#prerequisites)
 *   [Why traffic must be running first](#why-traffic-must-be-running-first)
@@ -42,6 +43,59 @@ This lab is a **reusable template**: run it against your own application by subs
 *   [Appendix B: PromQL / KQL cheat sheet](#appendix-b-promql--kql-cheat-sheet)
 *   [Appendix C: Validated command outputs](#appendix-c-validated-command-outputs)
 *   [Related files](#related-files)
+
+---
+
+## Process overview: one method, two execution paths
+
+Both paths start with a deployed application and continuous traffic, and both produce the same result:
+SLIs that are based on real user journeys, supported by telemetry, authored on the Service Group, and
+validated against live data. The difference is how you move through the process. Path A runs the steps
+with `sli-run-lab.ps1`; Path B exposes the commands and decisions so you can perform and adapt each step
+yourself.
+
+```mermaid
+flowchart TB
+    APP[Running application<br/>continuous traffic]
+
+    subgraph PATHS[Choose an execution path]
+      direction LR
+      AUTO[Path A<br/>automated runner]
+      MANUAL[Path B<br/>manual commands]
+      AUTO ~~~ MANUAL
+    end
+
+    subgraph DISCOVER[Discover and select]
+      direction LR
+      P1[1. Check environment<br/>and telemetry] --> P2[2. Enumerate all<br/>user journeys]
+      P2 --> P3[3. Select the<br/>critical journeys]
+      P3 --> P4[4. Collect data for<br/>each critical journey]
+    end
+
+    subgraph DELIVER[Design, implement, and verify]
+      direction LR
+      P5[5. Build the<br/>design checklist] --> P6[6. Author SLIs<br/>on the Service Group]
+      P6 --> P7[7. Validate published<br/>SLI results]
+      P7 --> P8[8. Confirm lab<br/>completion]
+    end
+
+    APP --> PATHS
+    PATHS -->|both follow the same method| DISCOVER
+    DISCOVER --> DELIVER
+```
+
+At a high level, the process narrows the application from **all journeys** to the **few journeys that
+matter most**. It then gathers evidence for each critical journey: the source metric, dimensions, current
+performance, signal continuity, and the definition of good and valid events. That evidence becomes one
+complete row in the design checklist. Each row maps directly to the fields used to author an SLI. The
+last two phases confirm that the SLI engine publishes a value and that the result matches the underlying
+telemetry.
+
+Path A automates discovery, queries, worksheet generation, authoring, and validation where possible. It
+still asks for human judgement where telemetry cannot make the decision, such as business criticality,
+whether the user pain is availability or latency, and the target to commit to. Path B follows the same
+sequence manually and is useful when you want to understand, customize, or troubleshoot every query and
+portal field.
 
 ---
 

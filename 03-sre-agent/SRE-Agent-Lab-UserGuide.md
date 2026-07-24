@@ -39,7 +39,7 @@ alerts.
 | Step | Action | How |
 | --- | --- | --- |
 | 1 | Deploy the SRE Agent as code in East US 2, scoped to the two demo RGs, approval-only, with its response plan | `sre-run-lab.ps1` |
-| 2 | Upload the app topology + all remediation runbooks to the agent's Knowledge settings | `sre-run-lab.ps1` Phase 6.6 (`upload-knowledge.ps1`) |
+| 2 | Upload the app topology + all remediation runbooks to the agent's Knowledge settings | `sre-run-lab.ps1` Phase 6.6 (`src/upload-knowledge.ps1`) |
 | 3 | Connect GitHub + confirm the Azure Monitor Alerts incident source (interactive OAuth) | portal, one-time |
 | 4 | Demo: enable the fast SLI alert, inject a fault, let the agent engage and remediate | `sli-alert-scenario.ps1` |
 
@@ -508,10 +508,10 @@ The agent stays in propose-and-approve mode: it never changes anything without y
 ## Knowledge and runbooks uploaded to the agent
 
 > This already happened during deploy - **no action needed.** Phase 6.6 of the runner
-> (`sre-run-lab.ps1`) runs `upload-knowledge.ps1` for you. The standalone command below is only for
+> (`sre-run-lab.ps1`) runs `src/upload-knowledge.ps1` for you. The standalone command below is only for
 > **re-uploading after you edit** a knowledge doc or runbook.
 
-Phase 6.6 of the runner (`upload-knowledge.ps1`) uploads two kinds of knowledge to the agent's
+Phase 6.6 of the runner (`src/upload-knowledge.ps1`) uploads two kinds of knowledge to the agent's
 **Knowledge settings**, indexed for semantic search, so the agent knows the layout and mitigations from
 the first incident instead of rediscovering them:
 
@@ -524,8 +524,8 @@ the first incident instead of rediscovering them:
 Re-run standalone any time (idempotent, same filenames replace):
 
 ```powershell
-./upload-knowledge.ps1                 # topology doc + all runbooks
-./upload-knowledge.ps1 -SkipRunbooks   # topology doc only
+./src/upload-knowledge.ps1                 # topology doc + all runbooks
+./src/upload-knowledge.ps1 -SkipRunbooks   # topology doc only
 ```
 
 The runbooks stay as executable scripts you (or the agent, via the equivalent `az` commands) can run.

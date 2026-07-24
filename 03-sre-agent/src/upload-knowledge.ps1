@@ -15,15 +15,15 @@
   See: https://learn.microsoft.com/en-us/azure/sre-agent/upload-knowledge-document
 
 .EXAMPLE
-  ./upload-knowledge.ps1
-  ./upload-knowledge.ps1 -AgentName sre-checkout -ResourceGroup rg-sre-checkout
+  ./src/upload-knowledge.ps1
+  ./src/upload-knowledge.ps1 -AgentName sre-checkout -ResourceGroup rg-sre-checkout
 #>
 param(
   [string]$Subscription,
   [string]$ResourceGroup = 'rg-sre-checkout',
   [string]$AgentName = 'sre-checkout',
-  [string]$KnowledgeDir = (Join-Path $PSScriptRoot 'knowledge'),
-  [string]$RunbooksDir = (Join-Path $PSScriptRoot 'src/remediation-runbooks'),
+  [string]$KnowledgeDir = (Join-Path (Split-Path -Parent $PSScriptRoot) 'knowledge'),
+  [string]$RunbooksDir = (Join-Path $PSScriptRoot 'remediation-runbooks'),
   [switch]$SkipRunbooks,
   [switch]$NoIndex
 )

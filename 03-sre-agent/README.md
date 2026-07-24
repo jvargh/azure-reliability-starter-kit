@@ -109,11 +109,11 @@ completed once in the portal (`sre.azure.com`). See the user guide for details.
   README.md                          this file
   sre-run-lab.ps1                    interactive runner: build (IaC) + validate + wire alerts + upload knowledge
   sli-alert-scenario.ps1             create the sli-fast-alerts trigger -> inject fault -> agent ingests + remediates
-  upload-knowledge.ps1               upload app topology + all runbooks to the agent's Knowledge settings
   teardown.ps1                       delete the agent, optionally its resource group
   SRE-Agent-Lab-UserGuide.md         deploy runner + knowledge/runbooks upload + SLI-alert trigger demo
   knowledge/                         app topology + runbook docs uploaded to Knowledge settings
   src/
+      upload-knowledge.ps1             upload app topology + all runbooks to the agent's Knowledge settings
     wire-alerts.ps1                  register Microsoft.App; resolve workload; verify alerts
     incident-response-plan.md        agent instructions (the state->response mapping)
     remediation-runbooks/
