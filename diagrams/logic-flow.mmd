@@ -6,20 +6,22 @@ flowchart TD
     SLI -->|results stored in AMW| AMW
     AMW -->|PromQL signal| HM[Health Models<br/>rollup health score]
     LAW --> HM
-    SLI -->|burn alerts| AG[Action Groups]
-    HM -->|health-state alerts| AG
+    SLI -->|burn alerts| ALERTS[Azure Monitor Alerts]
+    HM -->|health-state alerts| ALERTS
+    ALERTS -->|notify| AG[Action Groups]
+    ALERTS ---->|incident source| SRE[SRE Agent<br/>incident automation + approved fixes]
     AMW -->|telemetry + alerts| OBS[Observability Agent<br/>investigate + correlate]
     LAW --> OBS
     OBS --> ISS[Azure Monitor Issues]
     OBS -. autonomous .-> ISS
-    ISS -->|issue actions| AG
-    ISS --> SRE[SRE Agent<br/>incident automation + approved fixes]
-    SRE -->|remediate| APP
-    ISS --> GATE{Error budget<br/>healthy?}
+    ISS -. correlate .-> SRE
+    SRE -->|remediate approved fix| APP
+    SLI -->|error budget| GATE{Error budget<br/>healthy?}
     GATE -->|yes| SHIP[Ship features]
     GATE -->|no| FIX[Stabilize]
     style SLI fill:#0b6,stroke:#063,color:#fff
     style HM fill:#08c,stroke:#036,color:#fff
+    style ALERTS fill:#c60,stroke:#630,color:#fff
     style OBS fill:#73c,stroke:#319,color:#fff
     style SRE fill:#609,stroke:#306,color:#fff
     style GATE fill:#444,stroke:#000,color:#fff

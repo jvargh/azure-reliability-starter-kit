@@ -4,5 +4,6 @@ flowchart LR
     DI --> IS[Save as issue]
     IS --> AU[Autonomous: correlate alerts]
     AU --> IS
-    IS --> SRE[SRE Agent: automate response]
+    AL -->|incident source| SRE[SRE Agent: automate response]
+    IS -. correlate .-> SRE
     SRE --> FIX[Approved fix / remediation]

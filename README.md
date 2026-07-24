@@ -12,7 +12,20 @@ A customer-facing plan for building reliability on Azure, starting from the SLI/
 
 ---
 
-## 1. The story in one slide
+## Video walkthroughs
+
+Watch each phase end to end:
+
+| # | Walkthrough | Video |
+| --- | --- | --- |
+| 01 | Infra and SLI demo | [Watch](https://youtu.be/4IKhEFicIGc) |
+| 02 | Health modeling | [Watch](https://youtu.be/WuMS1eupwMM) |
+| 03 | SRE Agent | [Watch](https://youtu.be/kIDff6d3Ut8) |
+| 04 | End-to-end test | [Watch](https://youtu.be/dbdGPJhauIM) |
+
+---
+
+## 1\. The story in one slide
 
 Traditional monitoring tells you what your systems are doing. The path forward is to operate around what your customers experience, prove it against targets, and let AI shorten time-to-resolution.
 
@@ -24,7 +37,7 @@ Each phase reuses the previous one. SLIs feed Health Models, and Health Models f
 
 ## 1a. Implementation logic flow (all services, high level)
 
-How the services connect end to end: telemetry flows in, SLIs and Health Models score it, the Observability Agent reasons over it, and error budgets govern release decisions.
+How the services connect end to end: telemetry flows in, SLIs and Health Models score it, the Observability Agent reasons over it, Azure Monitor Alerts feed the SRE Agent as its incident source, and error budgets govern release decisions.
 
 ![End-to-end implementation logic flow connecting telemetry, Service Group, SLIs, Health Models, Action Groups, Observability Agent, Issues, SRE Agent, and the error-budget gate](diagrams/logic-flow.png)
 
@@ -70,12 +83,12 @@ Why this matters:
 2.  **Score it.** SLIs and SLOs on a Service Group turn that telemetry into customer-experience reliability, with error budgets and burn rate.
 3.  **Roll it up.** Health Models read the SLI results (PromQL signal) plus resource signals into one top-down health score.
 4.  **Understand fast.** The Observability Agent ingests that telemetry and the burn-rate and health-state alerts directly, investigates, explains the root cause, and saves findings as Azure Monitor issues.
-5.  **Notify and act.** Each issue fans out to shared Action Groups (notification, not raw metric noise) and to the SRE Agent, which correlates with code and deployments and applies approved fixes back to the apps.
+5.  **Notify and act.** The burn-rate and health-state alerts become Azure Monitor Alerts that fan out two ways: to shared Action Groups for human notification, and to the SRE Agent as its incident source (validated end to end: SLI degradation surfaces a Health Model health-state alert that the agent ingests). The SRE Agent correlates each incident with code and deployments (and the Observability Agent's issues), then applies approved fixes back to the apps.
 6.  **Decide.** The error budget gates the call: ship features when healthy, stabilize when burning.
 
 ---
 
-## 2. Where you are today (the foundation)
+## 2\. Where you are today (the foundation)
 
 You have already done the hardest part: measuring reliability the way customers feel it.
 
@@ -87,7 +100,7 @@ This is the bedrock. Everything below builds on it without rework.
 
 ---
 
-## 3. The path forward (three moves)
+## 3\. The path forward (three moves)
 
 ### Move 1: Health Models, give the application a single, honest health score
 
@@ -110,7 +123,7 @@ The capstone: budgets become a decision tool. Budget healthy means ship features
 
 ---
 
-## 4. Phased roadmap
+## 4\. Phased roadmap
 
 | Phase | Focus | Key actions | Outcome |
 | --- | --- | --- | --- |
@@ -121,7 +134,7 @@ The capstone: budgets become a decision tool. Budget healthy means ship features
 
 ---
 
-## 5. At a glance: the four services
+## 5\. At a glance: the four services
 
 ### SLIs and SLOs
 
@@ -149,7 +162,7 @@ The capstone: budgets become a decision tool. Budget healthy means ship features
 
 ---
 
-## 6. How each phase is done (validated against Azure docs)
+## 6\. How each phase is done (validated against Azure docs)
 
 This is the implementation plan, not theory. Every step below maps to a current Microsoft Learn procedure (links inline).
 
@@ -211,19 +224,19 @@ Burn-rate and health-state alerts gate releases; SRE Agent does first triage; we
 
 Two executable, command-by-command labs let you build phases 0 and 1 against the demo app (or your own, by substituting resource names). Both are reusable templates with the Checkout/Login demo filled in as the worked example.
 
-*   **SLI/SLO Design Lab** ([01-sli-demo/SLI-Lab-UserGuide.md](01-sli-demo/SLI-Lab-UserGuide.md)) — takes you from a running app to three authored SLIs. You enumerate every user journey, score them for criticality, collect the evidence for each SLI (source metric, current performance, signal continuity, good/valid definition), fill a design checklist, author each SLI in the portal field-by-field, and validate end to end with PromQL. Worked result: `CheckoutAvailabilitySLI` (availability), `LoginLatencySLI` (latency), `PaymentDependencySLI` (dependency). Pair it with [01-sli-demo/SLI-Design-Guide.md](01-sli-demo/SLI-Design-Guide.md) for the theory.
-*   **Health Model Lab** ([02-healthmodel-demo/Health-Model-Lab-UserGuide.md](02-healthmodel-demo/Health-Model-Lab-UserGuide.md)) — builds an Azure Monitor health model over the same app: create the model, discover the app as entities, add signals (including an **Azure Monitor workspace PromQL signal that consumes the SLI results** written by the SLI engine), set Degraded/Unhealthy thresholds, configure health-state alerts, and view the rollup. This is where SLIs feed the health score. Pair it with [02-healthmodel-demo/Health-Model-Design-Guide.md](02-healthmodel-demo/Health-Model-Design-Guide.md) for the theory.
+*   **SLI/SLO Design Lab** ([01-sli-demo/SLI-Lab-UserGuide.md](01-sli-demo/SLI-Lab-UserGuide.md)): takes you from a running app to three authored SLIs. You enumerate every user journey, score them for criticality, collect the evidence for each SLI (source metric, current performance, signal continuity, good/valid definition), fill a design checklist, author each SLI in the portal field-by-field, and validate end to end with PromQL. Worked result: `CheckoutAvailabilitySLI` (availability), `LoginLatencySLI` (latency), `PaymentDependencySLI` (dependency). Pair it with [01-sli-demo/SLI-Design-Guide.md](01-sli-demo/SLI-Design-Guide.md) for the theory.
+*   **Health Model Lab** ([02-healthmodel-demo/Health-Model-Lab-UserGuide.md](02-healthmodel-demo/Health-Model-Lab-UserGuide.md)): builds an Azure Monitor health model over the same app: create the model, discover the app as entities, add signals (including an **Azure Monitor workspace PromQL signal that consumes the SLI results** written by the SLI engine), set Degraded/Unhealthy thresholds, configure health-state alerts, and view the rollup. This is where SLIs feed the health score. Pair it with [02-healthmodel-demo/Health-Model-Design-Guide.md](02-healthmodel-demo/Health-Model-Design-Guide.md) for the theory.
 
 The labs connect: the Health Model Lab reads the very SLI result metrics (`ns::<servicegroup>/m::<sli>:value`) that the SLI/SLO lab produces, so run the SLI lab first.
 
 ---
 
-## 7. What we ask of the customer
+## 7\. What we ask of the customer
 
 *   Agree the **top 3 services** to model first (start where revenue/customer impact is highest).
 *   Nominate an **SRE/platform owner** per service to own SLOs and budgets.
 
-## 8. Measures of success
+## 8\. Measures of success
 
 *   Reliability: SLO attainment up, burn-alert false positives down.
 *   Speed: MTTR down with agent-assisted triage.

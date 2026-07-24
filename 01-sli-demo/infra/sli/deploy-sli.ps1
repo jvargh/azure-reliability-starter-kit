@@ -39,7 +39,10 @@ param(
   # flows, so their dimensions index later than the always-present counter metrics;
   # allow a longer window for them to catch up.
   [int]$SliIndexingRetryMinutes = 45,
-  [switch]$SkipRecordingRules
+  [switch]$SkipRecordingRules,
+  # Action group notified by the SLI SLO-breach alerts (created in the RG if missing).
+  [string]$ActionGroupName = 'ag-sli-demo',
+  [switch]$SkipAlerts
 )
 
 $ErrorActionPreference = 'Stop'
@@ -335,6 +338,90 @@ foreach ($name in $sliNames) {
     Start-Sleep -Seconds 6
   }
   '{0,-26} {1}' -f $name, $state | Write-Host
+}
+
+# ---------------------------------------------------------------------------
+# 7. SLI alerts (portal-equivalent LINKED metric alerts)
+#    The SLI resource has no alert-config property (enableAlert is only a flag), so
+#    the portal's "Enable Alert" instead creates Microsoft.Insights/metricAlerts with
+#    PromQLCriteria over the SLI's own good/total metrics, tagged with
+#    customProperties.sliId. That sliId tag is what makes them show as LINKED on the
+#    SLI blade. We reproduce that exactly: baseline + fast burn + slow burn per SLI,
+#    wired to the action group. NOTE: these are DISPLAY-ONLY on the SLI blade - their
+#    PromQL selector does not resolve at evaluation time, so they do not actually fire.
+#    The SRE Agent trigger is the sli-fast-alerts Prometheus rule created by
+#    ../../03-sre-agent/sli-alert-scenario.ps1 (verified end-to-end).
+# ---------------------------------------------------------------------------
+if (-not $SkipAlerts) {
+  Write-Host '==> Creating SLI linked alerts (baseline + fast/slow burn metric alerts)' -ForegroundColor Cyan
+  $agId = az monitor action-group show -g $ResourceGroup -n $ActionGroupName --query id -o tsv 2>$null
+  if (-not $agId) {
+    Write-Host "    Action group '$ActionGroupName' not found; creating it."
+    az monitor action-group create -g $ResourceGroup -n $ActionGroupName --short-name sliDemo -o none
+    $agId = az monitor action-group show -g $ResourceGroup -n $ActionGroupName --query id -o tsv
+  }
+  $amwLoc = az resource show --ids $amwId --query location -o tsv
+  $maApi = '2024-03-01-preview'
+  $sgResId = "/providers/Microsoft.Management/serviceGroups/$ServiceGroupName"
+  $noDim = 'sum without ("INCLUDE-ALL-DIMENSIONS-DONT-REMOVE")'
+
+  function New-SliLinkedAlert {
+    param([string]$SliName, [double]$Target, [int]$BaselineSeverity)
+    $sliResId = "$sgResId/providers/Microsoft.Monitor/slis/$SliName"
+    $good = "{`"${SliName}:good`"}"
+    $total = "{`"${SliName}:total`"}"
+    $budget = (1 - ($Target / 100))
+    $alerts = @(
+      @{ suffix = 'baseline alert'; sev = $BaselineSeverity; waitFor = 'PT1M';
+        query = "($noDim ($good) / $noDim ($total)) * 100 < $Target";
+        cp = @{ alertKind = 'baseline' } },
+      @{ suffix = 'fast burn alert'; sev = 2; waitFor = 'PT5M';
+        query = "(($noDim (sum_over_time(${total}[1h])) - $noDim (sum_over_time(${good}[1h]))) / ($noDim (sum_over_time(${total}[1h])) * $budget)) > 14";
+        cp = @{ alertKind = 'fast-burn-rate'; burnRate = '14'; lookbackHours = '1' } },
+      @{ suffix = 'slow burn alert'; sev = 3; waitFor = 'PT5M';
+        query = "(($noDim (sum_over_time(${total}[6h])) - $noDim (sum_over_time(${good}[6h]))) / ($noDim (sum_over_time(${total}[6h])) * $budget)) > 6";
+        cp = @{ alertKind = 'slow-burn-rate'; burnRate = '6'; lookbackHours = '6' } }
+    )
+    foreach ($a in $alerts) {
+      $name = "$SliName $($a.suffix)"
+      $cp = $a.cp.Clone(); $cp.serviceGroupId = $sgResId; $cp.sliId = $sliResId
+      $body = @{
+        location   = $amwLoc
+        identity   = @{ type = 'UserAssigned'; userAssignedIdentities = @{ $uamiId = @{} } }
+        properties = @{
+          severity            = $a.sev
+          enabled             = $true
+          scopes              = @($amwId)
+          targetResourceType  = 'microsoft.monitor/accounts'
+          evaluationFrequency = 'PT1M'
+          criteria            = @{
+            'odata.type'   = 'Microsoft.Azure.Monitor.PromQLCriteria'
+            allOf          = @(@{ criterionType = 'StaticThresholdCriterion'; name = 'SliAlertCriterion'; query = $a.query })
+            failingPeriods = @{ 'for' = $a.waitFor }
+          }
+          resolveConfiguration = @{ autoResolved = $true; timeToResolve = 'PT5M' }
+          actions              = @(@{ actionGroupId = $agId })
+          customProperties     = $cp
+          description          = "SLI $($a.cp.alertKind) alert for $SliName."
+        }
+      }
+      $enc = [uri]::EscapeDataString($name)
+      $url = "$mgmt/subscriptions/$subId/resourceGroups/$ResourceGroup/providers/Microsoft.Insights/metricAlerts/$enc`?api-version=$maApi"
+      # Delete any pre-existing alert first (a portal-created one may sit in a different
+      # location, and a metric alert's location cannot be changed in place).
+      az rest --method delete --url $url -o none 2>$null
+      Invoke-Arm -Method put -Url $url -Body $body | Out-Null
+      Write-Host "    $name  (Sev$($a.sev))" -ForegroundColor Green
+    }
+  }
+
+  New-SliLinkedAlert -SliName 'CheckoutAvailabilitySLI' -Target 99.5 -BaselineSeverity 1
+  New-SliLinkedAlert -SliName 'LoginLatencySLI' -Target 99.5 -BaselineSeverity 2
+  New-SliLinkedAlert -SliName 'PaymentDependencySLI' -Target 99.5 -BaselineSeverity 2
+  # Retire interim standalone Prometheus rule groups (superseded by the linked metric alerts).
+  foreach ($legacy in @('sli-fast-alerts', 'sli-slo-alerts')) {
+    az rest --method delete --url "$mgmt/subscriptions/$subId/resourceGroups/$ResourceGroup/providers/Microsoft.AlertsManagement/prometheusRuleGroups/$legacy`?api-version=2023-03-01" -o none 2>$null
+  }
 }
 
 Write-Host ''

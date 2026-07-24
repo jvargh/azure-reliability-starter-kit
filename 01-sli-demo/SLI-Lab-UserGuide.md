@@ -319,6 +319,19 @@ Delete Service Group 'CheckoutSG-<suffix>' and its SLIs now? (y/N):
 
 You can also stop the traffic generator (Terminal 1) once you are done.
 
+### Full teardown (delete everything)
+
+The prompt above (and `teardown-slo.ps1`) removes **only** the tenant-scoped Service Group and its SLIs. The resource group and everything in it (the four App Services + plan, Azure Monitor Workspace, Log Analytics, Application Insights, the managed identity, the Prometheus recording rules, the action group, and any SLI alerts) stay. To remove the entire demo, run [infra/infra-teardown.ps1](infra/infra-teardown.ps1). It removes the Service Group + SLIs first (they live outside the resource group, so a plain RG delete would orphan them), then deletes the `rg-sli-demo` resource group after a confirmation:
+
+```
+cd 01-sli-demo/infra
+./infra-teardown.ps1                    # lists resources, confirms, removes Service Group/SLIs, deletes rg-sli-demo
+./infra-teardown.ps1 -Force             # skip the confirmation prompt
+./infra-teardown.ps1 -SkipServiceGroup  # only delete the resource group (Service Group already gone)
+```
+
+Deleting the resource group is destructive and irreversible, so the script prints the resource list and asks you to type `yes` (unless you pass `-Force`). The delete runs in the background (`--no-wait`). Recreate the demo with `./infra-deploy.ps1` then `./sli/deploy-sli.ps1`.
+
 ### Full run output (Phases 1 to 8, non-interactive, existing Service Group)
 
 Traffic generator already running in a separate terminal. Command:
@@ -1588,4 +1601,5 @@ login = 0.8
 *   [load/generate-traffic-all.ps1](load/generate-traffic-all.ps1): the manual traffic generator.
 *   [infra/sli/deploy-sli.ps1](infra/sli/deploy-sli.ps1): creates the Service Group and authors the SLIs.
 *   [infra/sli/teardown-slo.ps1](infra/sli/teardown-slo.ps1): deletes the Service Group and its SLIs.
+*   [infra/infra-teardown.ps1](infra/infra-teardown.ps1): full teardown - removes the Service Group/SLIs, then deletes the `rg-sli-demo` resource group and everything in it.
 *   [SLI-Design-Guide.md](SLI-Design-Guide.md): the concepts and design method behind the lab.

@@ -1,4 +1,4 @@
 "Sli","Label","Role","Entity","Value","SeriesFound"
-"CheckoutAvailabilitySLI","service=checkout","backend","slidemo-be-ioarvugvrpkmc","99.539","True"
-"LoginLatencySLI","service=login","frontend","slidemo-fe-ioarvugvrpkmc","100","True"
-"PaymentDependencySLI","dependency=payment","backend","slidemo-be-ioarvugvrpkmc","99.539","True"
+"CheckoutAvailabilitySLI","service=checkout","backend","(not discovered)","99.85","True"
+"LoginLatencySLI","service=login","frontend","(not discovered)","100","True"
+"PaymentDependencySLI","dependency=payment","backend","(not discovered)","99.851","True"
