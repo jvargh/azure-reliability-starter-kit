@@ -82,19 +82,9 @@ flowchart TB
     APP --> PATHS
     PATHS -->|both follow the same method| DISCOVER
     DISCOVER --> DELIVER
-
-    click P1 "#phase-1-environment-setup-and-access-checks" "Phase 1: Environment setup and access checks"
-    click P2 "#phase-2-enumerate-all-user-journeys" "Phase 2: Enumerate ALL user journeys"
-    click P3 "#phase-3-extract-the-critical-journeys" "Phase 3: Extract the CRITICAL journeys"
-    click P4 "#phase-4-data-collection-per-critical-journey" "Phase 4: Data collection"
-    click P5 "#phase-5-consolidate-into-the-design-checklist" "Phase 5: Consolidate into the design checklist"
-    click P6 "#phase-6-author-the-slis-in-the-portal-field-by-field" "Phase 6: Author the SLIs in the portal"
-    click P7 "#phase-7-validate-end-to-end" "Phase 7: Validate end-to-end"
-    click P8 "#phase-8-lab-completion-checklist" "Phase 8: Lab completion checklist"
 ```
 
-> The diagram nodes link to each Path B phase in renderers that allow it. GitHub does not make Mermaid
-> nodes clickable, so use these direct links there: [Phase 1](#phase-1-environment-setup-and-access-checks)
+> Jump to a phase: [Phase 1](#phase-1-environment-setup-and-access-checks)
 > · [Phase 2](#phase-2-enumerate-all-user-journeys) · [Phase 3](#phase-3-extract-the-critical-journeys)
 > · [Phase 4](#phase-4-data-collection-per-critical-journey) · [Phase 5](#phase-5-consolidate-into-the-design-checklist)
 > · [Phase 6](#phase-6-author-the-slis-in-the-portal-field-by-field) · [Phase 7](#phase-7-validate-end-to-end)
